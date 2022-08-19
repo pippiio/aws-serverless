@@ -18,27 +18,28 @@ variable "config" {
       description = string
       #   src_path        = string
 
+      runtime = optional(string)
       source = object({
         type = string # s3|ecr|github - pt kun s3
         path = string
       })
 
-    #   image_tag       = optional(string)
-      timeout         = optional(number)
-      memory_size     = optional(number)
-    #   subnets         = optional(string)
-    #   security_groups = optional(string)
-    #   inline_policies = optional(map(string))
+      #   image_tag       = optional(string)
+      timeout     = optional(number)
+      memory_size = optional(number)
+      #   subnets         = optional(string)
+      #   security_groups = optional(string)
+      #   inline_policies = optional(map(string))
 
       environment_variables = optional(map(object({
         value = string
         type  = string # enten cleartext eller ssm param
       })))
 
-    #   permissions = optional(map(object({
-    #     actions  = list(string)
-    #     resource = string
-    #   })))
+      #   permissions = optional(map(object({
+      #     actions  = list(string)
+      #     resource = string
+      #   })))
 
       events = optional(object({
         sns = optional(map(object({})))
