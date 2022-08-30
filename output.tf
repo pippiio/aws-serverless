@@ -1,11 +1,7 @@
-output "debug_config" {
-  value = local.config
-}
+output "serverless" {
+  value = {
+    kms_key_id = local.kms_key_id
 
-output "sqs_arn" {
-  value = [for k, v in aws_sqs_queue.this : v.arn]
-}
-
-output "sqs_arn_alt" {
-  value = aws_sqs_queue.this
+    topic = { for name, topic in aws_sns_topic.topic : name => topic.id }
+  }
 }

@@ -1,70 +1,107 @@
 variable "config" {
   type = object({
 
-    topics = map(object({
-      fifo = optional(bool)
-    }))
+    kms_key_id = optional(string)
 
-    queues = map(object({
+    topic = optional(map(object({
+      fifo            = optional(bool)
+      delivery_policy = optional(string)
+      policy          = optional(string)
+
+      publisher = optional(map(object({
+        type   = string
+        values = set(string)
+      })))
+
+      subscriber = optional(map(object({
+        protocol = string
+        endpoint = string
+      })))
+    })))
+
+    queue = optional(map(object({
+      public                     = bool
       visibility_timeout_seconds = optional(number)
       message_retention_seconds  = optional(number)
       delay_seconds              = optional(number)
       receive_wait_time_seconds  = optional(number)
 
-      sns_subscriptions = optional(map(object({})))
-    }))
+      sns_subscriptions = optional(set(string))
+    })))
 
-    function = map(object({
-      description = string
-      #   src_path        = string
+    storage = optional(map(object({})))
 
-      runtime = optional(string)
+    database = optional(map(object({})))
+
+    function = optional(map(object({
+      description        = optional(string)
+      iam_role           = optional(string)
+      timeout            = optional(number)
+      memory_size        = optional(number)
+      subnet_ids         = optional(set(string))
+      security_group_ids = optional(string)
+      iam_policies       = optional(set(string))
+      inline_policies    = optional(map(string))
+
       source = object({
-        type = string # s3|ecr|github - pt kun s3
-        path = string
+        type    = string
+        runtime = optional(string)
+        path    = string
       })
 
-      #   image_tag       = optional(string)
-      timeout     = optional(number)
-      memory_size = optional(number)
-      #   subnets         = optional(string)
-      #   security_groups = optional(string)
-      #   inline_policies = optional(map(string))
-
-      environment_variables = optional(map(object({
+      environment_variable = optional(map(object({
+        type  = string # text|secret
         value = string
-        type  = string # enten cleartext eller ssm param
       })))
 
-      #   permissions = optional(map(object({
-      #     actions  = list(string)
-      #     resource = string
+      #   trigger = optional(map(object({
+      #     topic = optional(string)
+      #     queue
+      #     schedule
+      #     https
+      #     file
+      #     log
+      #     email
+      #   loadbalancer
       #   })))
 
-      events = optional(object({
-        sns = optional(map(object({})))
-        sqs = optional(map(object({
-          batch_size                         = optional(number)
-          maximum_batching_window_in_seconds = optional(number)
-        })))
-        schedules = optional(map(object({
-          cron = string
-        })))
-        https = optional(map(object({
-          method = string
-          path   = string
-          public = bool
-          # timeout_milliseconds 
-          # throttle
-        })))
-      }))
-
-      targets = optional(map(object({
-        env_var_key = string
-        type        = string
+      target = optional(map(object({
+        #   topic
+        #   queue
+        #   function
       })))
-    }))
-
+    })))
 
   })
+
+  ##### Topic #####
+
+  validation {
+    error_message = "Topic names can include alphanumeric characters, hyphens (-) and underscores."
+    condition     = try(alltrue([for name in keys(var.config.topic) : length(regexall("^[a-zA-Z0-9_-]+$", name)) > 0]), true)
+  }
+
+  validation {
+    error_message = "Topic policy and publisher are mutually exclusive."
+    condition     = try(alltrue([for topic in values(var.config.topic) : !(topic.policy != null && topic.publisher != null)]), true)
+  }
+
+  ##### .subscriber #####
+
+  validation {
+    error_message = "Invalid subscriber protocol. Valid values includes [lambda, email, email-json, sms, http, https]."
+    condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for subscriber in values(topic.subscriber) : contains(["lambda", "email", "email-json", "sms", "http", "https", "sqs"], subscriber.protocol)] if topic.subscriber != null])), true)
+  }
+
+  validation {
+    error_message = "Only sqs subscriber protocol can be used with FIFO topics."
+    condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for subscriber in values(topic.subscriber) : subscriber.protocol == "sqs"] if coalesce(topic.fifo, false)])), true)
+  }
+
+  ##### .publisher #####
+
+  validation {
+    error_message = "Invalid publisher type. Valid values includes [service, account, organization, arn]."
+    condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for publisher in values(topic.publisher) : contains(["service", "account", "organization", "arn"], publisher.type)] if topic.publisher != null])), true)
+  }
 }

@@ -13,7 +13,7 @@ variable "name_prefix" {
 
   validation {
     condition     = length(regexall("^[a-zA-Z-]*$", var.name_prefix)) > 0
-    error_message = "`name_prefix` must satisfy pattern `^[a-zA-Z-]*$`."
+    error_message = "`name_prefix` must satisfy pattern `^[a-zA-Z-]+$`."
   }
 }
 
@@ -32,4 +32,7 @@ locals {
 
   region_name = data.aws_region.current.name
   account_id  = data.aws_caller_identity.current.account_id
+
+  // Common regex patterns
+  regex_anhu = "^[a-zA-Z0-9_-]+$"
 }
