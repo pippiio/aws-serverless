@@ -20,13 +20,13 @@ variable "config" {
     })))
 
     queue = optional(map(object({
-      public                     = bool
+      fifo                       = optional(bool)
       visibility_timeout_seconds = optional(number)
       message_retention_seconds  = optional(number)
       delay_seconds              = optional(number)
       receive_wait_time_seconds  = optional(number)
-
-      sns_subscriptions = optional(set(string))
+      topic_subscriptions        = optional(set(string))
+      # public                     = optional(bool)
     })))
 
     storage = optional(map(object({})))
@@ -71,7 +71,6 @@ variable "config" {
         #   function
       })))
     })))
-
   })
 
   ##### Topic #####
