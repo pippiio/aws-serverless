@@ -1,7 +1,8 @@
 variable "config" {
   type = object({
 
-    kms_key_id = optional(string)
+    kms_key_id            = optional(string)
+    log_retention_in_days = optional(number)
 
     topic = optional(map(object({
       fifo            = optional(bool)
@@ -26,7 +27,6 @@ variable "config" {
       delay_seconds              = optional(number)
       receive_wait_time_seconds  = optional(number)
       topic_subscriptions        = optional(set(string))
-      # public                     = optional(bool)
     })))
 
     storage = optional(map(object({})))
@@ -44,9 +44,10 @@ variable "config" {
       inline_policies    = optional(map(string))
 
       source = object({
-        type    = string
-        runtime = optional(string)
-        path    = string
+        type         = string
+        architecture = optional(string)
+        runtime      = optional(string)
+        path         = string
       })
 
       environment_variable = optional(map(object({
