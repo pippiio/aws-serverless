@@ -55,16 +55,21 @@ variable "config" {
         value = string
       })))
 
-      #   trigger = optional(map(object({
+      trigger = optional(object({
       #     topic = optional(string)
       #     queue
       #     schedule
-      #     https
+        https = optional(map(object({
+          method = string
+          path = string
+          timeout_ms = optional(number, 5000)
+      #    authorizer = optional(object({}))
+        })))
       #     file
       #     log
       #     email
       #   loadbalancer
-      #   })))
+      }))
 
       target = optional(map(object({
         #   topic
