@@ -1,13 +1,33 @@
 data "aws_iam_policy_document" "topic" {
   for_each = { for idx, topic in local.config.topic : idx => topic.publisher if try(length(topic.publisher) > 0, false) }
 
+  statement {
+    sid       = "Enable IAM User Permissions"
+    resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${local.config.topic[each.key].name}"]
+    actions = [
+      "SNS:GetTopicAttributes",
+      "SNS:SetTopicAttributes",
+      "SNS:AddPermission",
+      "SNS:RemovePermission",
+      "SNS:DeleteTopic",
+      "SNS:Subscribe",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish"
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id}:root"]
+    }
+  }
+
   dynamic "statement" {
     for_each = { for idx, publisher in each.value : idx => publisher if publisher.type == "account" }
 
     content {
       sid       = statement.key
       actions   = ["sns:Publish"]
-      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${each.key}"]
+      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${local.config.topic[each.key].name}"]
 
       principals {
         type        = "AWS"
@@ -22,7 +42,7 @@ data "aws_iam_policy_document" "topic" {
     content {
       sid       = statement.key
       actions   = ["sns:Publish"]
-      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${each.key}"]
+      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${local.config.topic[each.key].name}"]
 
       principals {
         type        = "AWS"
@@ -43,7 +63,7 @@ data "aws_iam_policy_document" "topic" {
     content {
       sid       = statement.key
       actions   = ["sns:Publish"]
-      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${each.key}"]
+      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${local.config.topic[each.key].name}"]
 
       principals {
         type        = "AWS"
@@ -64,7 +84,7 @@ data "aws_iam_policy_document" "topic" {
     content {
       sid       = statement.key
       actions   = ["sns:Publish"]
-      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${each.key}"]
+      resources = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${local.config.topic[each.key].name}"]
 
       principals {
         type        = "AWS"
@@ -83,7 +103,7 @@ data "aws_iam_policy_document" "topic" {
 resource "aws_sns_topic" "topic" {
   for_each = local.config.topic
 
-  name                        = format("${var.name_prefix}${each.key}%s", coalesce(each.value.fifo, false) ? ".fifo" : "")
+  name                        = each.value.name
   display_name                = title(replace(each.key, "/[-_]+/", " "))
   kms_master_key_id           = local.kms_key_id
   fifo_topic                  = coalesce(each.value.fifo, false)

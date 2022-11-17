@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "kms" {
   }
 
   statement {
-    sid       = "Allow SNS"
+    sid       = "Allow Lambda CloudWatch Logs"
     resources = ["*"]
     actions = [
       "kms:Encrypt",
@@ -23,13 +23,43 @@ data "aws_iam_policy_document" "kms" {
 
     principals {
       type        = "Service"
-      identifiers = ["sns.amazonaws.com"]
+      identifiers = ["logs.${local.region_name}.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = [for function in keys(local.config.function) : "arn:aws:logs:${local.region_name}:${local.account_id}:log-group:/aws/lambda/${var.name_prefix}${function}"]
+    }
+  }
+
+  statement {
+    sid       = "Allow SNS"
+    resources = ["*"]
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+
+    principals {
+      type = "Service"
+      identifiers = [
+        "sns.amazonaws.com",
+        # "lambda.amazonaws.com",
+
+      ]
     }
 
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
-      values   = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}*"]
+      values = setunion(
+        [for topic in values(local.config.topic) : "arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${topic.name}"],
+        # [for function in keys(local.config.function) : "arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}${function}"],
+      )
     }
   }
 }
