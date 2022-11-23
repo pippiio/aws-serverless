@@ -38,7 +38,7 @@ resource "aws_cloudwatch_log_group" "function" {
 resource "aws_iam_role" "function" {
   for_each = local.config.function
 
-  name               = "${var.name_prefix}${each.key}"
+  name               = "${var.name_prefix}lambda-${each.key}-role"
   assume_role_policy = data.aws_iam_policy_document.assume_lambda[each.key].json
 
   inline_policy {

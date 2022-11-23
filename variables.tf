@@ -119,13 +119,25 @@ variable "config" {
     condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
   }
 
-  # validation {
-  #   error_message = "Invalid path for s3 source. The path must consists of the bucket name and the bucket key seperated by a ':'. E.g. 'bucket_name:key/to/object'."
-  #   condition = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^[\\w\\-]+:[\\w\\-\\/]+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
-  # }
+  validation {
+    error_message = "Invalid path for s3 source. The path must consists of the bucket name and the bucket key seperated by a ':'. E.g. 'bucket_name:key/to/object'."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^[\\w\\-]+:[\\w\\-\\/\\.]+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
+  }
 
   validation {
     error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
     condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
+  }
+
+  ##### .trigger.https #####
+
+  validation {
+    error_message = "Invalid http method. Valid values includes [GET, POST, PUT, DELETE]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : contains(["GET", "POST", "PUT", "DELETE"], endpoint.method)]])), true)
+  }
+
+  validation {
+    error_message = "Invalid http path. Path must begin with a forward slash '/'"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : startswith(endpoint.path, "/")]])), true)
   }
 }
