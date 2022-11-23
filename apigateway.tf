@@ -1,5 +1,5 @@
 resource "aws_apigatewayv2_api" "this" {
-  count = length(local.endpoints) == 0 ? 0 : 1
+  count = local.enable_api_gateway
 
   name          = "${var.name_prefix}api"
   protocol_type = "HTTP"
@@ -7,7 +7,7 @@ resource "aws_apigatewayv2_api" "this" {
 }
 
 resource "aws_apigatewayv2_stage" "this" {
-  count = length(local.endpoints) == 0 ? 0 : 1
+  count = local.enable_api_gateway
 
   api_id = one(aws_apigatewayv2_api.this).id
 
@@ -15,7 +15,7 @@ resource "aws_apigatewayv2_stage" "this" {
   auto_deploy = true
 
   access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway[0].arn
+    destination_arn = one(aws_cloudwatch_log_group.api_gateway).arn
 
     format = jsonencode({
       requestId               = "$context.requestId"
@@ -39,7 +39,7 @@ resource "aws_apigatewayv2_integration" "this" {
     for func_name, func in local.config.function : func_name => func
   }
 
-  api_id = one(aws_apigatewayv2_api.this).id
+  api_id      = one(aws_apigatewayv2_api.this).id
   description = "Endpoint integration for ${each.key} lambda"
 
   integration_uri    = aws_lambda_function.function[each.key].invoke_arn
@@ -59,19 +59,20 @@ resource "aws_apigatewayv2_route" "this" {
 }
 
 locals {
+  enable_api_gateway = length(local.endpoints) > 0 ? 1 : 0
   endpoints = flatten([
     for func_name, func in local.config.function : [
       for http_key, endpoint in func.trigger.https : {
         func_name     = func_name
         endpoint_name = http_key
-        endpoint = endpoint
+        endpoint      = endpoint
       }
     ]
   ])
 }
 
 resource "aws_cloudwatch_log_group" "api_gateway" {
-  count = length(local.endpoints) == 0 ? 0 : 1
+  count = local.enable_api_gateway
 
   name              = "/aws/api_gateway/${aws_apigatewayv2_api.this[0].name}"
   retention_in_days = local.config.log_retention_in_days

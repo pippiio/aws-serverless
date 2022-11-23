@@ -1,7 +1,7 @@
 variable "config" {
   type = object({
 
-    kms_alias_arn = optional(string)
+    kms_alias_arn         = optional(string)
     log_retention_in_days = optional(number, 7)
 
     topic = optional(map(object({
@@ -45,11 +45,11 @@ variable "config" {
       inline_policies    = optional(map(string))
 
       source = object({
-        type    = string # ecr, s3, git, local
-        runtime = optional(string)
-        handler = optional(string)
+        type         = string # ecr, s3, git, local
+        runtime      = optional(string)
+        handler      = optional(string)
         architecture = optional(string, "x86_64")
-        path    = string
+        path         = string
       })
 
       environment_variable = optional(map(object({
@@ -58,18 +58,18 @@ variable "config" {
       })))
 
       trigger = optional(object({
-      #     topic = optional(string)
-      #     queue
-      #     schedule
+        #     topic = optional(string)
+        #     queue
+        #     schedule
         https = optional(map(object({
           method = string
-          path = string
-      #    authorizer = optional(object({}))
+          path   = string
+          #    authorizer = optional(object({}))
         })))
-      #     file
-      #     log
-      #     email
-      #   loadbalancer
+        #     file
+        #     log
+        #     email
+        #   loadbalancer
       }))
 
       target = optional(map(object({
@@ -116,7 +116,7 @@ variable "config" {
 
   validation {
     error_message = "Invalid source type. Valid values includes [s3, ecr, git, local]."
-    condition = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
   }
 
   # validation {
@@ -126,6 +126,6 @@ variable "config" {
 
   validation {
     error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
-    condition = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
   }
 }

@@ -55,7 +55,7 @@ resource "aws_lambda_function" "function" {
   role          = aws_iam_role.function[each.key].arn
 
   s3_bucket = each.value.source.type == "s3" ? split(":", each.value.source.path)[0] : null
-  s3_key = each.value.source.type == "s3" ? split(":", each.value.source.path)[1] : null
+  s3_key    = each.value.source.type == "s3" ? split(":", each.value.source.path)[1] : null
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
