@@ -58,6 +58,19 @@ resource "aws_apigatewayv2_route" "this" {
   target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
 }
 
+resource "aws_lambda_permission" "api_gateway" {
+  for_each = {
+    for i, endpoint in local.endpoints : i => endpoint
+  }
+
+  statement_id  = "AllowExecutionFromAPIGateway_${each.value.endpoint.method}_${replace(each.value.endpoint.path, "/[\\/{}]/", "")}"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.function[each.value.func_name].function_name
+
+  principal  = "apigateway.amazonaws.com"
+  source_arn = "${one(aws_apigatewayv2_api.this).execution_arn}/${one(aws_apigatewayv2_stage.this).name}/${each.value.endpoint.method}${each.value.endpoint.path}"
+}
+
 locals {
   enable_api_gateway = length(local.endpoints) > 0 ? 1 : 0
   endpoints = flatten([
