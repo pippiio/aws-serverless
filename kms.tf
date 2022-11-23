@@ -32,6 +32,29 @@ data "aws_iam_policy_document" "kms" {
       values   = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}*"]
     }
   }
+
+  statement {
+    sid       = "Allow CloudWatch Logs"
+    resources = ["*"]
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${local.region_name}.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:aws:logs:${local.region_name}:${local.account_id}:log-group:/aws/*/${local.name_prefix}*"]
+    }
+  }
 }
 
 resource "aws_kms_key" "this" {

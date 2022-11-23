@@ -18,7 +18,7 @@ variable "config" {
         protocol = string
         endpoint = string
       })))
-    })))
+    })), {})
 
     queue = optional(map(object({
       public                     = bool
@@ -28,7 +28,7 @@ variable "config" {
       receive_wait_time_seconds  = optional(number)
 
       sns_subscriptions = optional(set(string))
-    })))
+    })), {})
 
     storage = optional(map(object({})))
 
@@ -45,8 +45,10 @@ variable "config" {
       inline_policies    = optional(map(string))
 
       source = object({
-        type    = string
+        type    = string # ecr, s3, git, local
         runtime = optional(string)
+        handler = optional(string)
+        architecture = optional(string, "x86_64")
         path    = string
       })
 
@@ -104,5 +106,22 @@ variable "config" {
   validation {
     error_message = "Invalid publisher type. Valid values includes [service, account, organization, arn]."
     condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for publisher in values(topic.publisher) : contains(["service", "account", "organization", "arn"], publisher.type)] if topic.publisher != null])), true)
+  }
+
+  ##### Funciton #####
+
+  validation {
+    error_message = "Invalid source type. Valid values includes [s3, ecr, git, local]."
+    condition = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
+  }
+
+  # validation {
+  #   error_message = "Invalid path for s3 source. The path must consists of the bucket name and the bucket key seperated by a ':'. E.g. 'bucket_name:key/to/object'."
+  #   condition = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^[\\w\\-]+:[\\w\\-\\/]+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
+  # }
+
+  validation {
+    error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
+    condition = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
   }
 }
