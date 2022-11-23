@@ -1,7 +1,8 @@
 variable "config" {
   type = object({
 
-    kms_key_id = optional(string)
+    kms_alias_arn = optional(string)
+    log_retention_in_days = optional(number, 7)
 
     topic = optional(map(object({
       fifo            = optional(bool)
