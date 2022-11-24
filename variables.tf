@@ -65,12 +65,12 @@ variable "config" {
           method = string
           path   = string
           #    authorizer = optional(object({}))
-        })))
+        })), {})
         #     file
         #     log
         #     email
         #   loadbalancer
-      }))
+      }), {})
 
       target = optional(map(object({
         #   topic
