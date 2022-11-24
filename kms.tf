@@ -29,7 +29,30 @@ data "aws_iam_policy_document" "kms" {
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
-      values   = ["arn:aws:sns:${local.region_name}:${local.account_id}:${var.name_prefix}*"]
+      values   = ["arn:aws:sns:${local.region_name}:${local.account_id}:${local.name_prefix}*"]
+    }
+  }
+
+  statement {
+    sid       = "Allow Lambda"
+    resources = ["*"]
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:lambda:${local.region_name}:${local.account_id}:${local.name_prefix}*"]
     }
   }
 
@@ -60,17 +83,21 @@ data "aws_iam_policy_document" "kms" {
 resource "aws_kms_key" "this" {
   count = local.create_kms_key
 
-  description         = "KMS CMK used by ${var.name_prefix}serverless"
+  description         = "KMS CMK used by ${local.name_prefix}serverless"
   enable_key_rotation = true
   policy              = data.aws_iam_policy_document.kms.json
-  tags = merge(var.default_tags, {
-    "Name" = "${var.name_prefix}kms-cmk"
+  tags = merge(local.default_tags, {
+    "Name" = "${local.name_prefix}kms-cmk"
   })
 }
 
 resource "aws_kms_alias" "this" {
   count = local.create_kms_key
 
-  name          = "alias/${var.name_prefix}serverless-cmk"
+  name          = "alias/${local.name_prefix}serverless-cmk"
   target_key_id = one(aws_kms_key.this).key_id
+}
+
+data "aws_kms_key" "from_alias" {
+  key_id = local.kms_arn
 }

@@ -41,8 +41,8 @@ variable "config" {
       memory_size        = optional(number)
       subnet_ids         = optional(set(string))
       security_group_ids = optional(string)
-      iam_policies       = optional(set(string))
-      inline_policies    = optional(map(string))
+      iam_policies_arns  = optional(set(string))
+      inline_policies    = optional(map(string), {})
 
       source = object({
         type         = string # ecr, s3, git, local
@@ -53,9 +53,9 @@ variable "config" {
       })
 
       environment_variable = optional(map(object({
-        type  = string # text|secret
+        type  = optional(string, "text") # text|ssm
         value = string
-      })))
+      })), {})
 
       trigger = optional(object({
         #     topic = optional(string)
@@ -139,5 +139,12 @@ variable "config" {
   validation {
     error_message = "Invalid http path. Path must begin with a forward slash '/'"
     condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : startswith(endpoint.path, "/")]])), true)
+  }
+
+  ##### .environment_variable ######
+
+  validation {
+    error_message = "Invalid environment variable type. Valid values includes [text, ssm]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for env_var in values(function.environment_variable) : contains(["text", "ssm"], env_var.type)]])), true)
   }
 }
