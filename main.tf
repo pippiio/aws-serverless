@@ -1,7 +1,7 @@
 locals {
-  config         = var.config
-  
-  kms_arn  = try(one(aws_kms_alias.this).arn, local.config.kms_arn)
+  config = var.config
+
+  kms_arn        = try(one(aws_kms_alias.this).arn, local.config.kms_arn)
   create_kms_key = local.config.kms_arn == null ? 1 : 0
 
   endpoints = {
@@ -15,6 +15,6 @@ locals {
       ]
     ]) : "${value.func_name}/${value.endpoint_name}" => value
   }
-  
+
   enable_api_gateway = length(local.endpoints) > 0 ? 1 : 0
 }
