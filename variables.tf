@@ -120,8 +120,8 @@ variable "config" {
   }
 
   validation {
-    error_message = "Invalid path for s3 source. The path must consists of the bucket name and the bucket key seperated by a ':'. E.g. 'bucket_name:key/to/object'."
-    condition     = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^[\\w\\-]+:[\\w\\-\\/\\.]+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
+    error_message = "Invalid path for s3 source. The path must be a valid s3 uri (s3:// can be omited). E.g. 's3://bucket_name/key/to/object' or 'bucket_name/key/to/object'."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^(s3:\\/\\/)?[\\w\\-]+\\/.+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
   }
 
   validation {

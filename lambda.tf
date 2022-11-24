@@ -30,7 +30,7 @@ resource "aws_cloudwatch_log_group" "function" {
 
   name              = "/aws/lambda/${var.name_prefix}${each.key}"
   retention_in_days = local.config.log_retention_in_days
-  kms_key_id        = local.kms_alias_arn
+  kms_key_id        = local.kms_arn
   tags              = local.default_tags
 }
 
@@ -54,8 +54,8 @@ resource "aws_lambda_function" "function" {
   description   = each.value.description
   role          = aws_iam_role.function[each.key].arn
 
-  s3_bucket = each.value.source.type == "s3" ? split(":", each.value.source.path)[0] : null
-  s3_key    = each.value.source.type == "s3" ? split(":", each.value.source.path)[1] : null
+  s3_bucket = each.value.source.type == "s3" ? split("/", trimprefix(each.value.source.path, "s3://"))[0] : null
+  s3_key    = each.value.source.type == "s3" ? trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/") : null
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime

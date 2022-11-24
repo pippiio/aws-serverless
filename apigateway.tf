@@ -35,9 +35,7 @@ resource "aws_apigatewayv2_stage" "this" {
 }
 
 resource "aws_apigatewayv2_integration" "this" {
-  for_each = {
-    for func_name, func in local.config.function : func_name => func
-  }
+  for_each = local.config.function
 
   api_id      = one(aws_apigatewayv2_api.this).id
   description = "Endpoint integration for ${each.key} lambda"
@@ -71,25 +69,12 @@ resource "aws_lambda_permission" "api_gateway" {
   source_arn = "${one(aws_apigatewayv2_api.this).execution_arn}/${one(aws_apigatewayv2_stage.this).name}/${each.value.endpoint.method}${each.value.endpoint.path}"
 }
 
-locals {
-  enable_api_gateway = length(local.endpoints) > 0 ? 1 : 0
-  endpoints = flatten([
-    for func_name, func in local.config.function : [
-      for http_key, endpoint in func.trigger.https : {
-        func_name     = func_name
-        endpoint_name = http_key
-        endpoint      = endpoint
-      }
-    ]
-  ])
-}
-
 resource "aws_cloudwatch_log_group" "api_gateway" {
   count = local.enable_api_gateway
 
   name              = "/aws/api_gateway/${aws_apigatewayv2_api.this[0].name}"
   retention_in_days = local.config.log_retention_in_days
-  kms_key_id        = local.kms_alias_arn
+  kms_key_id        = local.kms_arn
 
   tags = local.default_tags
 }
