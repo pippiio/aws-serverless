@@ -46,9 +46,7 @@ resource "aws_apigatewayv2_integration" "this" {
 }
 
 resource "aws_apigatewayv2_route" "this" {
-  for_each = {
-    for i, endpoint in local.endpoints : i => endpoint
-  }
+  for_each = local.endpoints
 
   api_id = one(aws_apigatewayv2_api.this).id
 
@@ -57,9 +55,7 @@ resource "aws_apigatewayv2_route" "this" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
-  for_each = {
-    for i, endpoint in local.endpoints : i => endpoint
-  }
+  for_each = local.endpoints
 
   statement_id  = "AllowExecutionFromAPIGateway_${each.value.endpoint.method}_${replace(each.value.endpoint.path, "/[\\/{}]/", "")}"
   action        = "lambda:InvokeFunction"
