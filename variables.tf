@@ -41,8 +41,8 @@ variable "config" {
       memory_size        = optional(number)
       subnet_ids         = optional(set(string))
       security_group_ids = optional(string)
-      iam_policies       = optional(set(string))
-      inline_policies    = optional(map(string))
+      iam_policies_arns  = optional(set(string))
+      inline_policies    = optional(map(string), {})
 
       source = object({
         type         = string # ecr, s3, git, local

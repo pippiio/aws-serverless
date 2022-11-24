@@ -45,6 +45,15 @@ resource "aws_iam_role" "function" {
     name   = "LeastPrivilege"
     policy = data.aws_iam_policy_document.function[each.key].json
   }
+
+  dynamic "inline_policy" {
+    for_each = each.value.inline_policies
+
+    content {
+      name   = "Custom${inline_policy.key}"
+      policy = inline_policy.value
+    }
+  }
 }
 
 resource "aws_lambda_function" "function" {
