@@ -35,7 +35,10 @@ resource "aws_apigatewayv2_stage" "this" {
 }
 
 resource "aws_apigatewayv2_integration" "this" {
-  for_each = local.config.function
+  for_each = {
+    for func_name, func in local.config.function : func_name => func
+    if length(func.trigger.https) > 0
+  }
 
   api_id      = one(aws_apigatewayv2_api.this).id
   description = "Endpoint integration for ${each.key} lambda"

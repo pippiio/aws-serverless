@@ -59,4 +59,45 @@ resource "aws_lambda_function" "function" {
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
+
+  kms_key_arn = length(each.value.environment_variable) > 0 ? data.aws_kms_key.from_alias.arn : null
+
+  dynamic "environment" {
+    for_each = [
+      merge(
+        {
+          for env_name, env_var in each.value.environment_variable :
+          env_name => env_var.value
+          if env_var.type == "text"
+        },
+        {
+          for env_name, env_var in each.value.environment_variable :
+          env_name => data.aws_ssm_parameter.function["${each.key}:${env_var.value}"].value
+          if env_var.type == "ssm"
+      })
+    ]
+
+    content {
+      variables = environment.value
+    }
+  }
+
+  tags = local.default_tags
+}
+
+data "aws_ssm_parameter" "function" {
+  for_each = {
+    for entry in flatten([
+      for func_key, func in local.config.function : [
+        for k, v in func.environment_variable : [{
+          func_name = func_key
+          var_name  = k
+          ssm_name  = v.value
+        }] if v.type == "ssm"
+      ]
+    ]) : "${entry.func_name}:${entry.var_name}" => entry.ssm_name
+  }
+
+  name            = each.value
+  with_decryption = true
 }
