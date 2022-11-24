@@ -1,5 +1,5 @@
 resource "aws_sqs_queue" "this" {
-  for_each = local.config.queues
+  for_each = local.config.queue
 
   name                      = each.key
   delay_seconds             = 90

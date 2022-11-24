@@ -1,7 +1,8 @@
 variable "config" {
   type = object({
 
-    kms_key_id = optional(string)
+    kms_arn         = optional(string)
+    log_retention_in_days = optional(number, 7)
 
     topic = optional(map(object({
       fifo            = optional(bool)
@@ -17,7 +18,7 @@ variable "config" {
         protocol = string
         endpoint = string
       })))
-    })))
+    })), {})
 
     queue = optional(map(object({
       public                     = bool
@@ -27,7 +28,7 @@ variable "config" {
       receive_wait_time_seconds  = optional(number)
 
       sns_subscriptions = optional(set(string))
-    })))
+    })), {})
 
     storage = optional(map(object({})))
 
@@ -44,9 +45,11 @@ variable "config" {
       inline_policies    = optional(map(string))
 
       source = object({
-        type    = string
-        runtime = optional(string)
-        path    = string
+        type         = string # ecr, s3, git, local
+        runtime      = optional(string)
+        handler      = optional(string)
+        architecture = optional(string, "x86_64")
+        path         = string
       })
 
       environment_variable = optional(map(object({
@@ -54,16 +57,20 @@ variable "config" {
         value = string
       })))
 
-      #   trigger = optional(map(object({
-      #     topic = optional(string)
-      #     queue
-      #     schedule
-      #     https
-      #     file
-      #     log
-      #     email
-      #   loadbalancer
-      #   })))
+      trigger = optional(object({
+        #     topic = optional(string)
+        #     queue
+        #     schedule
+        https = optional(map(object({
+          method = string
+          path   = string
+          #    authorizer = optional(object({}))
+        })), {})
+        #     file
+        #     log
+        #     email
+        #   loadbalancer
+      }), {})
 
       target = optional(map(object({
         #   topic
@@ -103,5 +110,34 @@ variable "config" {
   validation {
     error_message = "Invalid publisher type. Valid values includes [service, account, organization, arn]."
     condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for publisher in values(topic.publisher) : contains(["service", "account", "organization", "arn"], publisher.type)] if topic.publisher != null])), true)
+  }
+
+  ##### Funciton #####
+
+  validation {
+    error_message = "Invalid source type. Valid values includes [s3, ecr, git, local]."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
+  }
+
+  validation {
+    error_message = "Invalid path for s3 source. The path must be a valid s3 uri (s3:// can be omited). E.g. 's3://bucket_name/key/to/object' or 'bucket_name/key/to/object'."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^(s3:\\/\\/)?[\\w\\-]+\\/.+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
+  }
+
+  validation {
+    error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
+  }
+
+  ##### .trigger.https #####
+
+  validation {
+    error_message = "Invalid http method. Valid values includes [GET, POST, PUT, DELETE]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : contains(["GET", "POST", "PUT", "DELETE"], endpoint.method)]])), true)
+  }
+
+  validation {
+    error_message = "Invalid http path. Path must begin with a forward slash '/'"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : startswith(endpoint.path, "/")]])), true)
   }
 }

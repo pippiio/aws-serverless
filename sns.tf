@@ -85,7 +85,7 @@ resource "aws_sns_topic" "topic" {
 
   name                        = format("${var.name_prefix}${each.key}%s", coalesce(each.value.fifo, false) ? ".fifo" : "")
   display_name                = title(replace(each.key, "/[-_]+/", " "))
-  kms_master_key_id           = local.kms_key_id
+  kms_master_key_id           = local.kms_arn
   fifo_topic                  = coalesce(each.value.fifo, false)
   content_based_deduplication = coalesce(each.value.fifo, false)
   policy                      = each.value.policy
