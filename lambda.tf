@@ -71,6 +71,11 @@ resource "aws_lambda_function" "function" {
 
   kms_key_arn = length(each.value.environment_variable) > 0 ? data.aws_kms_key.from_alias.arn : null
 
+  vpc_config {
+    security_group_ids = each.value.security_group_ids
+    subnet_ids         = each.value.subnet_ids
+  }
+
   dynamic "environment" {
     for_each = [
       merge(
