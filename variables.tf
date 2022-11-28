@@ -39,8 +39,8 @@ variable "config" {
       iam_role           = optional(string)
       timeout            = optional(number)
       memory_size        = optional(number)
-      subnet_ids         = optional(set(string))
-      security_group_ids = optional(string)
+      subnet_ids         = optional(set(string), [])
+      security_group_ids = optional(set(string), [])
       iam_policies_arns  = optional(set(string))
       inline_policies    = optional(map(string), {})
 
