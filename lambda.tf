@@ -17,7 +17,7 @@ data "aws_iam_policy_document" "function" {
 
   statement {
     sid       = "CloudWatchLogs"
-    resources = [aws_cloudwatch_log_group.function[each.key].arn]
+    resources = ["${aws_cloudwatch_log_group.function[each.key].arn}:*"]
     actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents"
