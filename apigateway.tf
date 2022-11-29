@@ -57,6 +57,9 @@ resource "aws_apigatewayv2_route" "this" {
 
   route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
   target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
+
+  authorizer_id = each.value.endpoint.authorizer != null ? aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id : null
+  authorization_type = each.value.endpoint.authorizer != null ? "JWT" : null
 }
 
 resource "aws_lambda_permission" "api_gateway" {
@@ -78,4 +81,25 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
   kms_key_id        = local.kms_arn
 
   tags = local.default_tags
+}
+
+resource "aws_apigatewayv2_authorizer" "this" {
+  for_each = { for key, value in { 
+    for auth in values(local.endpoints)[*].endpoint.authorizer 
+    : auth.name => { 
+      for k, v in auth 
+      : k => v 
+      if v != null
+    }... if auth != null 
+  } : key => merge(value...) }
+
+  api_id = one(aws_apigatewayv2_api.this).id
+  authorizer_type = "JWT"
+  identity_sources = each.value.identity_sources
+  name = each.key
+
+  jwt_configuration {
+    audience = each.value.audience
+    issuer = each.value.issuer_url
+  }
 }
