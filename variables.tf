@@ -70,6 +70,7 @@ variable "config" {
             identity_sources = optional(set(string))
             issuer_url = optional(string)
             audience = optional(set(string))
+            scopes = optional(set(string))
           }))
         })), {})
         #     file

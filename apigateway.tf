@@ -60,6 +60,7 @@ resource "aws_apigatewayv2_route" "this" {
 
   authorizer_id = each.value.endpoint.authorizer != null ? aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id : null
   authorization_type = each.value.endpoint.authorizer != null ? "JWT" : null
+  authorization_scopes = try(each.value.endpoint.authorizer.type, "") == "JWT" ? each.value.endpoint.authorizer.scopes : null
 }
 
 resource "aws_lambda_permission" "api_gateway" {
