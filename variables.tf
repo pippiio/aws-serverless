@@ -64,7 +64,14 @@ variable "config" {
         https = optional(map(object({
           method = string
           path   = string
-          #    authorizer = optional(object({}))
+          authorizer = optional(object({
+            name = string
+            type = optional(string, "JWT")
+            identity_sources = optional(set(string))
+            issuer_url = optional(string)
+            audience = optional(set(string))
+            scopes = optional(set(string))
+          }))
         })), {})
         #     file
         #     log
@@ -139,6 +146,11 @@ variable "config" {
   validation {
     error_message = "Invalid http path. Path must begin with a forward slash '/'"
     condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : startswith(endpoint.path, "/")]])), true)
+  }
+
+  validation {
+    error_message = "Invalid http authorizer type. Valid values includes [JWT]"
+    condition = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : [for authorizer in values(endpoint.authorizer.type) : contains(["JWT"], authorizer.type)]]])), true)
   }
 
   ##### .environment_variable ######
