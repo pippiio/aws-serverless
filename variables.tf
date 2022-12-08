@@ -139,8 +139,8 @@ variable "config" {
   ##### .trigger.https #####
 
   validation {
-    error_message = "Invalid http method. Valid values includes [GET, POST, PUT, DELETE]"
-    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : contains(["GET", "POST", "PUT", "DELETE"], endpoint.method)]])), true)
+    error_message = "Invalid http method. Valid values includes [GET, POST, PUT, DELETE, PATCH]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : contains(["GET", "POST", "PUT", "DELETE", "PATCH"], endpoint.method)]])), true)
   }
 
   validation {
