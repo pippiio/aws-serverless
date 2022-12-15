@@ -66,7 +66,7 @@ resource "aws_apigatewayv2_route" "this" {
 resource "aws_lambda_permission" "api_gateway" {
   for_each = local.endpoints
 
-  statement_id  = "AllowExecutionFromAPIGateway_${each.value.endpoint.method}_${replace(each.value.endpoint.path, "/[\\/{}]/", "")}"
+  statement_id  = "AllowExecutionFromAPIGateway_${each.value.func_name}_${each.value.endpoint_name}"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.function[each.value.func_name].function_name
 
