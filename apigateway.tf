@@ -50,17 +50,26 @@ resource "aws_apigatewayv2_integration" "this" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "this" {
-  for_each = local.endpoints
+resource "aws_apigatewayv2_route" "default" {
+  for_each = { for k, v in local.endpoints : k => v if v.endpoint.authorizer == null }
+
+  api_id = one(aws_apigatewayv2_api.this).id
+
+  route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
+  target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
+}
+
+resource "aws_apigatewayv2_route" "jwt_auth" {
+  for_each = { for k, v in local.endpoints : k => v if v.endpoint.authorizer != null && try(v.endpoint.authorizer.type, "") == "JWT" }
 
   api_id = one(aws_apigatewayv2_api.this).id
 
   route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
   target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
 
-  authorizer_id = each.value.endpoint.authorizer != null ? aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id : null
-  authorization_type = each.value.endpoint.authorizer != null ? "JWT" : null
-  authorization_scopes = try(each.value.endpoint.authorizer.type, "") == "JWT" ? each.value.endpoint.authorizer.scopes : null
+  authorization_type   = "JWT"
+  authorizer_id        = aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id
+  authorization_scopes = each.value.endpoint.authorizer.scopes
 }
 
 resource "aws_lambda_permission" "api_gateway" {
@@ -85,22 +94,22 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
 }
 
 resource "aws_apigatewayv2_authorizer" "this" {
-  for_each = { for key, value in { 
-    for auth in values(local.endpoints)[*].endpoint.authorizer 
-    : auth.name => { 
-      for k, v in auth 
-      : k => v 
+  for_each = { for key, value in {
+    for auth in values(local.endpoints)[*].endpoint.authorizer
+    : auth.name => {
+      for k, v in auth
+      : k => v
       if v != null
-    }... if auth != null 
+    }... if auth != null
   } : key => merge(value...) }
 
-  api_id = one(aws_apigatewayv2_api.this).id
-  authorizer_type = "JWT"
+  api_id           = one(aws_apigatewayv2_api.this).id
+  authorizer_type  = "JWT"
   identity_sources = each.value.identity_sources
-  name = each.key
+  name             = each.key
 
   jwt_configuration {
     audience = each.value.audience
-    issuer = each.value.issuer_url
+    issuer   = each.value.issuer_url
   }
 }
