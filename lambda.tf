@@ -56,6 +56,12 @@ resource "aws_iam_role" "function" {
   }
 }
 
+data "aws_s3_object" "function_source" {
+  for_each = { for key, value in local.config.function : key => value if value.source.type == "s3" }
+  bucket   = split("/", trimprefix(each.value.source.path, "s3://"))[0]
+  key      = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
+}
+
 resource "aws_lambda_function" "function" {
   for_each = local.config.function
 
@@ -63,8 +69,9 @@ resource "aws_lambda_function" "function" {
   description   = each.value.description
   role          = aws_iam_role.function[each.key].arn
 
-  s3_bucket = each.value.source.type == "s3" ? split("/", trimprefix(each.value.source.path, "s3://"))[0] : null
-  s3_key    = each.value.source.type == "s3" ? trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/") : null
+  s3_bucket         = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null
+  s3_key            = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].key : null
+  s3_object_version = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].version_id : null
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
