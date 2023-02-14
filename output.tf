@@ -7,5 +7,5 @@ output "kms_arn" {
 }
 
 output "api_endpoint" {
-  value = local.enable_api_gateway == 1 ? aws_apigatewayv2_api.this.api_endpoint : null
+  value = local.enable_api_gateway == 1 ? one(aws_apigatewayv2_api.this).api_endpoint : null
 }
