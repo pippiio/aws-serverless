@@ -86,6 +86,20 @@ variable "config" {
       })))
     })))
 
+    firewall = optional(object({
+      block_by_default = optional(bool, false)
+
+      aws_managed_rules = optional(set(string), [
+        "AWSManagedRulesAmazonIpReputationList",
+        "AWSManagedRulesCommonRuleSet",
+      ])
+
+      blocked_ip_cidrs  = optional(set(string), [])
+      blocked_countries = optional(set(string), [])
+      allowed_ip_cidrs  = optional(set(string), [])
+      allowed_countries = optional(set(string), [])
+      rule_groups       = optional(map(string), {})
+    }), {})
   })
 
   ##### Topic #####
