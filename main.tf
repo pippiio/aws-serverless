@@ -18,3 +18,8 @@ locals {
 
   enable_api_gateway = length(local.endpoints) > 0 ? 1 : 0
 }
+
+resource "random_password" "this" {
+  length  = 24
+  special = true
+}
