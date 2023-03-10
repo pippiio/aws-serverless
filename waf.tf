@@ -1,7 +1,7 @@
 resource "aws_wafv2_ip_set" "allowed_cidrs" {
   name               = "allowed-ip-cidrs"
   description        = "Allowed IP cidrs"
-  scope              = "CLOUDFRONT"
+  scope              = "REGIONAL"
   ip_address_version = "IPV4"
   addresses          = var.config.firewall.allowed_ip_cidrs
 
@@ -11,7 +11,7 @@ resource "aws_wafv2_ip_set" "allowed_cidrs" {
 resource "aws_wafv2_ip_set" "blocked_cidrs" {
   name               = "blocked-ip-cidrs"
   description        = "Blocked IP cidrs"
-  scope              = "CLOUDFRONT"
+  scope              = "REGIONAL"
   ip_address_version = "IPV4"
   addresses          = var.config.firewall.blocked_ip_cidrs
 
@@ -25,8 +25,8 @@ resource "aws_wafv2_web_acl_association" "this" {
 
 resource "aws_wafv2_web_acl" "this" {
   name        = "${local.name_prefix}apigateway-waf"
-  description = "Firewall_for_${local.name_prefix}website"
-  scope       = "CLOUDFRONT"
+  description = "Firewall_for_${local.name_prefix}apigateway"
+  scope       = "REGIONAL"
 
   default_action {
     dynamic "allow" {
