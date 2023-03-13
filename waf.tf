@@ -1,4 +1,6 @@
 resource "aws_wafv2_ip_set" "allowed_cidrs" {
+  count = local.enable_api_gateway_rest
+
   name               = "allowed-ip-cidrs"
   description        = "Allowed IP cidrs"
   scope              = "REGIONAL"
@@ -9,6 +11,8 @@ resource "aws_wafv2_ip_set" "allowed_cidrs" {
 }
 
 resource "aws_wafv2_ip_set" "blocked_cidrs" {
+  count = local.enable_api_gateway_rest
+
   name               = "blocked-ip-cidrs"
   description        = "Blocked IP cidrs"
   scope              = "REGIONAL"
@@ -19,11 +23,15 @@ resource "aws_wafv2_ip_set" "blocked_cidrs" {
 }
 
 resource "aws_wafv2_web_acl_association" "this" {
-  resource_arn = one(aws_apigatewayv2_stage.this).arn
-  web_acl_arn  = aws_wafv2_web_acl.this.arn
+  count = local.enable_api_gateway_rest
+
+  resource_arn = one(aws_api_gateway_rest_api.this).arn
+  web_acl_arn  = one(aws_wafv2_web_acl.this).arn
 }
 
 resource "aws_wafv2_web_acl" "this" {
+  count = local.enable_api_gateway_rest
+
   name        = "${local.name_prefix}apigateway-waf"
   description = "Firewall_for_${local.name_prefix}apigateway"
   scope       = "REGIONAL"
@@ -79,7 +87,7 @@ resource "aws_wafv2_web_acl" "this" {
       }
 
       statement {
-        ip_set_reference_statement { arn = aws_wafv2_ip_set.blocked_cidrs.arn }
+        ip_set_reference_statement { arn = one(aws_wafv2_ip_set.blocked_cidrs).arn }
       }
 
       visibility_config {
@@ -199,7 +207,7 @@ resource "aws_wafv2_web_acl" "this" {
       }
 
       statement {
-        ip_set_reference_statement { arn = aws_wafv2_ip_set.allowed_cidrs.arn }
+        ip_set_reference_statement { arn = one(aws_wafv2_ip_set.allowed_cidrs).arn }
       }
 
       visibility_config {

@@ -73,6 +73,18 @@ variable "config" {
             scopes           = optional(set(string))
           }))
         })), {})
+
+        rest = optional(map(object({
+          method = string
+          path   = string
+          authorizer = optional(object({
+            name                  = string
+            type                  = optional(string, "JWT") # token, request
+            authorizer_uri        = optional(string)
+            authorizer_cedentials = optional(string)
+            ttl                   = optional(number, 60)
+          }))
+        })), {})
         #     file
         #     log
         #     email
