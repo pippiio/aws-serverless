@@ -58,3 +58,11 @@ resource "aws_api_gateway_deployment" "this" {
     create_before_destroy = true
   }
 }
+
+resource "aws_api_gateway_stage" "this" {
+  count = local.enable_rest_api_gateway
+
+  deployment_id = one(aws_api_gateway_deployment.this).id
+  rest_api_id   = one(aws_api_gateway_rest_api.this).id
+  stage_name    = local.rest_stage_name
+}
