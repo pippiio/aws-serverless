@@ -6,11 +6,15 @@ output "kms_arn" {
   value = local.kms_arn
 }
 
-output "api_endpoint" {
-  value = local.enable_api_gateway == 1 ? one(aws_apigatewayv2_api.this).api_endpoint : null
+output "https_api_endpoint" {
+  value = local.enable_https_api_gateway == 1 ? one(aws_apigatewayv2_api.this).api_endpoint : null
 }
 
- output "secret" {
+output "rest_api_endpoint" {
+  value = local.enable_rest_api_gateway == 1 ? one(aws_api_gateway_deployment.this).invoke_url : null
+}
+
+output "secret" {
   value = {
     key   = "x-${local.name_prefix}secret"
     value = sensitive(random_password.this.result)

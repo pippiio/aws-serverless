@@ -1,3 +1,20 @@
+variable "name_prefix" {
+  description = "A prefix that will be used on all named resources."
+  type        = string
+  default     = "pippi-"
+
+  validation {
+    condition     = length(regexall("^[a-zA-Z-]*$", var.name_prefix)) > 0
+    error_message = "`name_prefix` must satisfy pattern `^[a-zA-Z-]+$`."
+  }
+}
+
+variable "default_tags" {
+  description = "A map of default tags, that will be applied to all resources applicable."
+  type        = map(string)
+  default     = {}
+}
+
 variable "config" {
   type = object({
 
@@ -71,6 +88,18 @@ variable "config" {
             issuer_url       = optional(string)
             audience         = optional(set(string))
             scopes           = optional(set(string))
+          }))
+        })), {})
+
+        rest = optional(map(object({
+          method = string
+          path   = string
+          authorizer = optional(object({
+            name                  = string
+            type                  = optional(string, "JWT") # token, request
+            authorizer_uri        = optional(string)
+            authorizer_cedentials = optional(string)
+            ttl                   = optional(number, 60)
           }))
         })), {})
         #     file
