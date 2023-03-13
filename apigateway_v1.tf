@@ -1,5 +1,5 @@
 resource "aws_api_gateway_rest_api" "this" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   name = "${var.name_prefix}rest-api"
 
@@ -14,7 +14,7 @@ resource "aws_api_gateway_rest_api" "this" {
       version = "1.0"
     }
     paths = {
-      for k, v in local.endpoints_rest : v.endpoint.path => {
+      for k, v in local.rest_endpoints : v.endpoint.path => {
         (split("/", v.endpoint.method)[0]) = {
           security = v.endpoint.authorizer != null ? [{
             (v.endpoint.authorizer.name) = []
@@ -29,7 +29,7 @@ resource "aws_api_gateway_rest_api" "this" {
       }
     }
     securityDefinitions = {
-      for k, v in local.endpoints_rest : v.endpoint.path => {
+      for k, v in local.rest_endpoints : v.endpoint.path => {
         (v.endpoint.authorizer.name) : {
           type                         = "apiKey",
           name                         = "Authorization",
@@ -48,7 +48,7 @@ resource "aws_api_gateway_rest_api" "this" {
 }
 
 resource "aws_api_gateway_deployment" "this" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   rest_api_id = one(aws_api_gateway_rest_api.this).id
 

@@ -1,5 +1,5 @@
 resource "aws_apigatewayv2_api" "this" {
-  count = local.enable_api_gateway_https
+  count = local.enable_https_api_gateway
 
   name          = "${var.name_prefix}https-api"
   protocol_type = "HTTP"
@@ -7,7 +7,7 @@ resource "aws_apigatewayv2_api" "this" {
 }
 
 resource "aws_apigatewayv2_stage" "this" {
-  count = local.enable_api_gateway_https
+  count = local.enable_https_api_gateway
 
   api_id = one(aws_apigatewayv2_api.this).id
 
@@ -51,7 +51,7 @@ resource "aws_apigatewayv2_integration" "this" {
 }
 
 resource "aws_apigatewayv2_route" "default" {
-  for_each = { for k, v in local.endpoints_https : k => v if v.endpoint.authorizer == null }
+  for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer == null }
 
   api_id = one(aws_apigatewayv2_api.this).id
 
@@ -60,7 +60,7 @@ resource "aws_apigatewayv2_route" "default" {
 }
 
 resource "aws_apigatewayv2_route" "jwt_auth" {
-  for_each = { for k, v in local.endpoints_https : k => v if v.endpoint.authorizer != null && try(v.endpoint.authorizer.type, "") == "JWT" }
+  for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer != null && try(v.endpoint.authorizer.type, "") == "JWT" }
 
   api_id = one(aws_apigatewayv2_api.this).id
 
@@ -73,7 +73,7 @@ resource "aws_apigatewayv2_route" "jwt_auth" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
-  for_each = local.endpoints_https
+  for_each = local.https_endpoints
 
   statement_id  = "AllowExecutionFromAPIGateway_${each.value.func_name}_${each.value.endpoint_name}"
   action        = "lambda:InvokeFunction"
@@ -84,7 +84,7 @@ resource "aws_lambda_permission" "api_gateway" {
 }
 
 resource "aws_cloudwatch_log_group" "api_gateway" {
-  count = local.enable_api_gateway_https
+  count = local.enable_https_api_gateway
 
   name              = "/aws/api_gateway/${aws_apigatewayv2_api.this[0].name}"
   retention_in_days = local.config.log_retention_in_days
@@ -95,7 +95,7 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
 
 resource "aws_apigatewayv2_authorizer" "this" {
   for_each = { for key, value in {
-    for auth in values(local.endpoints_https)[*].endpoint.authorizer
+    for auth in values(local.https_endpoints)[*].endpoint.authorizer
     : auth.name => {
       for k, v in auth
       : k => v

@@ -1,5 +1,5 @@
 resource "aws_wafv2_ip_set" "allowed_cidrs" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   name               = "allowed-ip-cidrs"
   description        = "Allowed IP cidrs"
@@ -11,7 +11,7 @@ resource "aws_wafv2_ip_set" "allowed_cidrs" {
 }
 
 resource "aws_wafv2_ip_set" "blocked_cidrs" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   name               = "blocked-ip-cidrs"
   description        = "Blocked IP cidrs"
@@ -23,14 +23,14 @@ resource "aws_wafv2_ip_set" "blocked_cidrs" {
 }
 
 resource "aws_wafv2_web_acl_association" "this" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   resource_arn = one(aws_api_gateway_rest_api.this).arn
   web_acl_arn  = one(aws_wafv2_web_acl.this).arn
 }
 
 resource "aws_wafv2_web_acl" "this" {
-  count = local.enable_api_gateway_rest
+  count = local.enable_rest_api_gateway
 
   name        = "${local.name_prefix}apigateway-waf"
   description = "Firewall_for_${local.name_prefix}apigateway"
