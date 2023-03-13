@@ -2,10 +2,6 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 variable "name_prefix" {
   description = "A prefix that will be used on all named resources."
   type        = string
@@ -32,7 +28,4 @@ locals {
 
   region_name = data.aws_region.current.name
   account_id  = data.aws_caller_identity.current.account_id
-
-  // Common regex patterns
-  regex_anhu = "^[a-zA-Z0-9_-]+$"
 }
