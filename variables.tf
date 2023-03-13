@@ -97,7 +97,6 @@ variable "config" {
           authorizer = optional(object({
             name                  = string
             type                  = optional(string, "JWT") # token, request
-            authorizer_uri        = optional(string)
             authorizer_cedentials = optional(string)
             ttl                   = optional(number, 60)
           }))
@@ -194,6 +193,28 @@ variable "config" {
   validation {
     error_message = "Invalid http authorizer type. Valid values includes [JWT]"
     condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.https) : [for authorizer in values(endpoint.authorizer.type) : contains(["JWT"], authorizer.type)]]])), true)
+  }
+
+  ##### .trigger.rest #####
+
+  validation {
+    error_message = "Invalid rest method. Valid values includes [GET, POST, PUT, DELETE, PATCH]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : contains(["GET", "POST", "PUT", "DELETE", "PATCH"], endpoint.method)]])), true)
+  }
+
+  validation {
+    error_message = "Invalid rest path. Path must begin with a forward slash '/'"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : startswith(endpoint.path, "/")]])), true)
+  }
+
+  validation {
+    error_message = "Invalid rest path. Path must begin with the same root name ex. '/api/'"
+    condition     = try(length(distinct(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : split("/", endpoint.path)[1]]]))) == 1, true)
+  }
+
+  validation {
+    error_message = "Invalid rest authorizer type. Valid values includes [token, request]"
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : [for authorizer in values(endpoint.authorizer.type) : contains(["token", "request"], authorizer.type)]]])), true)
   }
 
   ##### .environment_variable ######

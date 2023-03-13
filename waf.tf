@@ -25,7 +25,7 @@ resource "aws_wafv2_ip_set" "blocked_cidrs" {
 resource "aws_wafv2_web_acl_association" "this" {
   count = local.enable_rest_api_gateway
 
-  resource_arn = one(aws_api_gateway_rest_api.this).arn
+  resource_arn = one(aws_api_gateway_stage.this).arn
   web_acl_arn  = one(aws_wafv2_web_acl.this).arn
 }
 

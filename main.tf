@@ -27,6 +27,7 @@ locals {
       ]
     ]) : "${value.func_name}/${value.endpoint_name}" => value
   }
+  
   rest_endpoints = {
     for value in flatten([
       for func_name, func in local.config.function : [
@@ -41,6 +42,8 @@ locals {
 
   enable_https_api_gateway = length(local.https_endpoints) > 0 ? 1 : 0
   enable_rest_api_gateway  = length(local.rest_endpoints) > 0 ? 1 : 0
+
+  rest_stage_name = local.enable_rest_api_gateway == 1 ? (split("/", values(local.rest_endpoints)[0].endpoint.path)[1]) : null
 }
 
 resource "random_password" "this" {
