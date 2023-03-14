@@ -34,6 +34,14 @@ resource "aws_cloudwatch_log_group" "function" {
   tags              = local.default_tags
 }
 
+resource "aws_lambda_permission" "rest" {
+  for_each = local.enable_rest_api_gateway == 1 ? aws_lambda_function.function : {}
+
+  action        = "lambda:InvokeFunction"
+  function_name = each.value.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${split("/", one(aws_api_gateway_deployment.this).execution_arn)[0]}/*"
+}
 
 resource "aws_iam_role" "function" {
   for_each = local.config.function
