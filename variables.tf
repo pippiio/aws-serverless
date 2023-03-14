@@ -54,8 +54,8 @@ variable "config" {
     function = optional(map(object({
       description        = optional(string)
       iam_role           = optional(string)
-      timeout            = optional(number)
-      memory_size        = optional(number)
+      timeout_sec        = optional(number, 3)
+      memory_size        = optional(number, 128)
       subnet_ids         = optional(set(string), [])
       security_group_ids = optional(set(string), [])
       iam_policies_arns  = optional(set(string))
