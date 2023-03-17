@@ -22,6 +22,46 @@ data "aws_iam_policy_document" "function" {
       "logs:CreateLogStream",
       "logs:PutLogEvents"
     ]
+    effect = "Allow"
+  }
+
+  statement {
+    sid       = "KMS"
+    resources = [local.kms_arn]
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    effect = "Allow"
+  }
+
+  dynamic "statement" {
+    for_each = { for queue_key in keys(each.value.trigger.queue) : queue_key => aws_sqs_queue.this[queue_key].arn }
+
+    content {
+      sid       = "SQS-trigger-${statement.key}"
+      resources = [statement.value]
+      effect    = "Allow"
+      actions = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = { for queue_key in keys(each.value.target.queue) : queue_keys => aws_sqs_queue.this[queue_key].arn }
+
+    content {
+      sid       = "SQS-target-${statement.key}"
+      resources = [statement.value]
+      effect    = "Allow"
+      actions   = ["sqs:SendMessage"]
+    }
   }
 }
 
@@ -94,7 +134,7 @@ resource "aws_lambda_function" "function" {
   }
 
   dynamic "environment" {
-    for_each = [
+    for_each = try([
       merge(
         {
           for env_name, env_var in each.value.environment_variable :
@@ -105,8 +145,14 @@ resource "aws_lambda_function" "function" {
           for env_name, env_var in each.value.environment_variable :
           env_name => data.aws_ssm_parameter.function["${each.key}:${env_var.value}"].value
           if env_var.type == "ssm"
-      })
-    ]
+        },
+        {
+          for queue_name, queue in each.value.target.queue :
+          queue.env_key => aws_sqs_queue.this[queue_name].url
+          if queue.env_key != null
+        }
+      )
+    ], [])
 
     content {
       variables = environment.value

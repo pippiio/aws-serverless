@@ -38,11 +38,11 @@ variable "config" {
     })), {})
 
     queue = optional(map(object({
-      public                     = bool
-      visibility_timeout_seconds = optional(number)
-      message_retention_seconds  = optional(number)
-      delay_seconds              = optional(number)
-      receive_wait_time_seconds  = optional(number)
+      public                 = bool
+      visibility_timeout_sec = optional(number, 30)
+      message_retention_sec  = optional(number, 86400)
+      delay_sec              = optional(number, 90)
+      receive_wait_time_sec  = optional(number, 10)
 
       sns_subscriptions = optional(set(string))
     })), {})
@@ -76,7 +76,10 @@ variable "config" {
 
       trigger = optional(object({
         #     topic = optional(string)
-        #     queue
+        queue = optional(map(object({
+          batch_size                         = optional(number, 5)
+          maximum_batching_window_in_seconds = optional(number, 10)
+        })), {})
         #     schedule
         https = optional(map(object({
           method = string
@@ -109,7 +112,9 @@ variable "config" {
 
       target = optional(map(object({
         #   topic
-        #   queue
+        queue = optional(map(object({
+          env_key = optional(string)
+        })), {})
         #   function
       })))
     })))
@@ -215,6 +220,20 @@ variable "config" {
   validation {
     error_message = "Invalid rest authorizer type. Valid values includes [token, request]"
     condition     = try(alltrue(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : [for authorizer in values(endpoint.authorizer.type) : contains(["token", "request"], authorizer.type)]]])), true)
+  }
+
+  ##### .trigger.queue #####
+
+  validation {
+    error_message = "Invalid key, key must match one of the keys in config.queue"
+    condition     = try(alltrue(flatten([for func in values(var.config.function) : [for queue_name in keys(func.trigger.queue) : contains(keys(var.config.queue), queue_name)]])), true)
+  }
+
+  ##### .target.queue #####
+
+  validation {
+    error_message = "Invalid key, key must match one of the keys in config.queue"
+    condition     = try(alltrue(flatten([for func in values(var.config.function) : [for queue_name in keys(func.target.queue) : contains(keys(var.config.queue), queue_name)]])), true)
   }
 
   ##### .environment_variable ######
