@@ -54,7 +54,7 @@ data "aws_iam_policy_document" "function" {
   }
 
   dynamic "statement" {
-    for_each = { for queue_key in keys(each.value.target.queue) : queue_keys => aws_sqs_queue.this[queue_key].arn }
+    for_each = { for queue_key in keys(each.value.target.queue) : queue_key => aws_sqs_queue.this[queue_key].arn }
 
     content {
       sid       = "SQS-target-${statement.key}"
