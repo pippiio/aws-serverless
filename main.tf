@@ -27,7 +27,7 @@ locals {
       ]
     ]) : "${value.func_name}/${value.endpoint_name}" => value
   }
-  
+
   rest_endpoints = {
     for value in flatten([
       for func_name, func in local.config.function : [
