@@ -77,8 +77,8 @@ variable "config" {
       trigger = optional(object({
         #     topic = optional(string)
         queue = optional(map(object({
-          batch_size                         = optional(number, 5)
-          maximum_batching_window_in_seconds = optional(number, 10)
+          batch_size                     = optional(number, 5)
+          maximum_batching_window_in_sec = optional(number, 10)
         })), {})
         #     schedule
         https = optional(map(object({
