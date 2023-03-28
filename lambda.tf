@@ -116,7 +116,7 @@ resource "aws_lambda_function" "function" {
   function_name = "${var.name_prefix}${each.key}"
   description   = each.value.description
   role          = aws_iam_role.function[each.key].arn
-  timeout       = each.value.timeout_sec
+  timeout       = each.value.timeout_seconds
   memory_size   = each.value.memory_size
 
   s3_bucket         = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null

@@ -39,10 +39,10 @@ variable "config" {
 
     queue = optional(map(object({
       public                 = bool
-      visibility_timeout_sec = optional(number, 30)
-      message_retention_sec  = optional(number, 86400)
-      delay_sec              = optional(number, 90)
-      receive_wait_time_sec  = optional(number, 10)
+      visibility_timeout_seconds = optional(number, 30)
+      message_retention_seconds  = optional(number, 86400)
+      delay_seconds              = optional(number, 90)
+      receive_wait_time_seconds  = optional(number, 10)
 
       sns_subscriptions = optional(set(string))
     })), {})
@@ -54,7 +54,7 @@ variable "config" {
     function = optional(map(object({
       description        = optional(string)
       iam_role           = optional(string)
-      timeout_sec        = optional(number, 3)
+      timeout_seconds    = optional(number, 3)
       memory_size        = optional(number, 128)
       subnet_ids         = optional(set(string), [])
       security_group_ids = optional(set(string), [])
@@ -77,8 +77,8 @@ variable "config" {
       trigger = optional(object({
         #     topic = optional(string)
         queue = optional(map(object({
-          batch_size                     = optional(number, 5)
-          maximum_batching_window_in_sec = optional(number, 10)
+          batch_size                         = optional(number, 5)
+          maximum_batching_window_in_seconds = optional(number, 10)
         })), {})
         #     schedule
         https = optional(map(object({
