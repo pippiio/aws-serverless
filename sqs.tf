@@ -13,7 +13,7 @@ resource "aws_sqs_queue" "this" {
   #   })
 
   kms_master_key_id = local.kms_arn
-  policy            = data.aws_iam_policy_document.queue
+  policy            = data.aws_iam_policy_document.queue[each.key].json
 
   tags = merge({}, local.default_tags)
 }

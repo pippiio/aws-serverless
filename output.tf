@@ -21,3 +21,7 @@ output "secret" {
   }
   sensitive = true
 }
+
+output "sqs_queue" {
+  value = { for v in values(aws_sqs_queue.this) : trimprefix(v.name, local.name_prefix) => v }
+}

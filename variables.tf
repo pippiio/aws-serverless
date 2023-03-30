@@ -110,13 +110,13 @@ variable "config" {
         #   loadbalancer
       }), {})
 
-      target = optional(map(object({
+      target = optional(object({
         #   topic
         queue = optional(map(object({
           env_key = optional(string)
         })), {})
         #   function
-      })))
+      }))
     })))
 
     firewall = optional(object({
@@ -214,7 +214,7 @@ variable "config" {
 
   validation {
     error_message = "Invalid rest path. Path must begin with the same root name ex. '/api/'"
-    condition     = try(length(distinct(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : split("/", endpoint.path)[1]]]))) == 1, true)
+    condition     = try(length(distinct(flatten([for function in values(var.config.function) : [for endpoint in values(function.trigger.rest) : split("/", endpoint.path)[1]]]))) <= 1, true)
   }
 
   validation {
@@ -225,14 +225,14 @@ variable "config" {
   ##### .trigger.queue #####
 
   validation {
-    error_message = "Invalid key, key must match one of the keys in config.queue"
+    error_message = "Invalid key, trigger queue key must match one of the keys in config.queue"
     condition     = try(alltrue(flatten([for func in values(var.config.function) : [for queue_name in keys(func.trigger.queue) : contains(keys(var.config.queue), queue_name)]])), true)
   }
 
   ##### .target.queue #####
 
   validation {
-    error_message = "Invalid key, key must match one of the keys in config.queue"
+    error_message = "Invalid key, target queue key must match one of the keys in config.queue"
     condition     = try(alltrue(flatten([for func in values(var.config.function) : [for queue_name in keys(func.target.queue) : contains(keys(var.config.queue), queue_name)]])), true)
   }
 
