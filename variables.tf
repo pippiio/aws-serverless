@@ -110,13 +110,13 @@ variable "config" {
         #   loadbalancer
       }), {})
 
-      target = optional(map(object({
+      target = optional(object({
         #   topic
         queue = optional(map(object({
           env_key = optional(string)
         })), {})
         #   function
-      })))
+      }))
     })))
 
     firewall = optional(object({
