@@ -38,30 +38,22 @@ data "aws_iam_policy_document" "function" {
     effect = "Allow"
   }
 
-  dynamic "statement" {
-    for_each = { for queue_key in keys(each.value.trigger.queue) : queue_key => aws_sqs_queue.this[queue_key].arn }
-
-    content {
-      sid       = "SQS-trigger-${statement.key}"
-      resources = [statement.value]
-      effect    = "Allow"
-      actions = [
-        "sqs:ReceiveMessage",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueAttributes"
-      ]
-    }
+  statement {
+    sid       = "SQSTriggers"
+    resources = [ for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn ]
+    effect    = "Allow"
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes"
+    ]
   }
 
-  dynamic "statement" {
-    for_each = { for queue_key in keys(each.value.target.queue) : queue_key => aws_sqs_queue.this[queue_key].arn }
-
-    content {
-      sid       = "SQS-target-${statement.key}"
-      resources = [statement.value]
-      effect    = "Allow"
-      actions   = ["sqs:SendMessage"]
-    }
+  statement {
+    sid       = "SQSTargets"
+    resources = [ for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn ]
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
   }
 }
 

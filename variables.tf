@@ -38,11 +38,16 @@ variable "config" {
     })), {})
 
     queue = optional(map(object({
-      public                 = bool
+      public                     = bool
       visibility_timeout_seconds = optional(number, 30)
       message_retention_seconds  = optional(number, 86400)
       delay_seconds              = optional(number, 90)
       receive_wait_time_seconds  = optional(number, 10)
+
+      dead_letter_queue = optional(object({
+        name             = string
+        max_recive_count = optional(number, 4)
+      }), null)
 
       sns_subscriptions = optional(set(string))
     })), {})

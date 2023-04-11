@@ -7,15 +7,21 @@ resource "aws_sqs_queue" "this" {
   message_retention_seconds  = each.value.message_retention_seconds
   receive_wait_time_seconds  = each.value.receive_wait_time_seconds
   visibility_timeout_seconds = each.value.visibility_timeout_seconds
-  #   redrive_policy = jsonencode({
-  #     deadLetterTargetArn = aws_sqs_queue.terraform_queue_deadletter.arn
-  #     maxReceiveCount     = 4
-  #   })
 
   kms_master_key_id = local.kms_arn
   policy            = data.aws_iam_policy_document.queue[each.key].json
 
   tags = merge({}, local.default_tags)
+}
+
+resource "aws_sqs_queue_redrive_policy" "dead_letter_policy" {
+  for_each = { for k, v in local.config.queue : k => v.dead_letter_queue if v.dead_letter_queue != null }
+
+  queue_url = aws_sqs_queue.this[each.key].id
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.this[each.value.name].arn
+    maxReceiveCount     = each.value.max_recive_count
+  })
 }
 
 
