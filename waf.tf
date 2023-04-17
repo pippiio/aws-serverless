@@ -49,11 +49,11 @@ resource "aws_wafv2_web_acl" "this" {
 
   # 1+ AWS Managed Rules
   dynamic "rule" {
-    for_each = tolist(var.config.firewall.aws_managed_rules)
+    for_each = var.config.firewall.aws_managed_rules
 
     content {
-      name     = rule.value
-      priority = 1 + rule.key
+      name     = rule.key
+      priority = 1 + index(keys(var.config.firewall.aws_managed_rules), rule.key)
 
       override_action {
         none {}
@@ -61,15 +61,45 @@ resource "aws_wafv2_web_acl" "this" {
 
       statement {
         managed_rule_group_statement {
-          name        = rule.value
+          name        = rule.key
           vendor_name = "AWS"
+
+          dynamic "rule_action_override" {
+            for_each = rule.value.rule_action_override
+
+            content {
+              action_to_use {
+                dynamic "allow" {
+                  for_each = rule_action_override.value == "allow" ? {1:1} : {}
+                  content {}
+                }
+
+                dynamic "block" {
+                  for_each = rule_action_override.value == "block" ? {1:1} : {}
+                  content {}
+                }
+
+                dynamic "captcha" {
+                  for_each = rule_action_override.value == "captcha" ? {1:1} : {}
+                  content {}
+                }
+
+                dynamic "count" {
+                  for_each = rule_action_override.value == "count" ? {1:1} : {}
+                  content {}
+                }
+              }
+
+              name = rule_action_override.key
+            }
+          }
         }
       }
 
       visibility_config {
         cloudwatch_metrics_enabled = true
         sampled_requests_enabled   = true
-        metric_name                = rule.value
+        metric_name                = rule.key
       }
     }
   }
