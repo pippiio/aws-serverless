@@ -108,6 +108,7 @@ variable "config" {
             authorizer_cedentials = optional(string)
             ttl                   = optional(number, 60)
           }))
+          binary_media_types    = optional(list(string))
         })), {})
         #     file
         #     log
@@ -121,16 +122,18 @@ variable "config" {
           env_key = optional(string)
         })), {})
         #   function
-      }))
+      }), {})
     })))
 
     firewall = optional(object({
       block_by_default = optional(bool, false)
 
-      aws_managed_rules = optional(set(string), [
-        "AWSManagedRulesAmazonIpReputationList",
-        "AWSManagedRulesCommonRuleSet",
-      ])
+      aws_managed_rules = optional(map(object({
+        rule_action_override = optional(map(string), {})
+      })), {
+        AWSManagedRulesAmazonIpReputationList = {},
+        AWSManagedRulesCommonRuleSet = {}
+      })
 
       blocked_ip_cidrs  = optional(set(string), [])
       blocked_countries = optional(set(string), [])
@@ -152,6 +155,13 @@ variable "config" {
     condition     = try(alltrue([for topic in values(var.config.topic) : !(topic.policy != null && topic.publisher != null)]), true)
   }
 
+  ##### Firewall #####
+
+  validation {
+    error_message = "Invalid rule action type. Valid values includes [allow, block, captcha, count]."
+    condition     = try(alltrue(flatten([for rule in values(var.config.firewall.aws_managed_rules) : [for action in values(rule.rule_action_override) : contains(["allow", "block", "captcha", "count"], action)] if rule.rule_action_override != null])), true)
+  }
+
   ##### .subscriber #####
 
   validation {
@@ -171,7 +181,7 @@ variable "config" {
     condition     = try(alltrue(flatten([for topic in values(var.config.topic) : [for publisher in values(topic.publisher) : contains(["service", "account", "organization", "arn"], publisher.type)] if topic.publisher != null])), true)
   }
 
-  ##### Funciton #####
+  ##### Function #####
 
   validation {
     error_message = "Invalid source type. Valid values includes [s3, ecr, git, local]."
