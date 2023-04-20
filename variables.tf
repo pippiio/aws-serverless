@@ -72,6 +72,7 @@ variable "config" {
         handler      = optional(string)
         architecture = optional(string, "x86_64")
         path         = string
+        hash         = optional(string)
       })
 
       environment_variable = optional(map(object({
