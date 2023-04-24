@@ -109,7 +109,7 @@ variable "config" {
             authorizer_cedentials = optional(string)
             ttl                   = optional(number, 60)
           }))
-          binary_media_types    = optional(list(string))
+          binary_media_types = optional(list(string))
         })), {})
         #     file
         #     log
@@ -131,9 +131,9 @@ variable "config" {
 
       aws_managed_rules = optional(map(object({
         rule_action_override = optional(map(string), {})
-      })), {
+        })), {
         AWSManagedRulesAmazonIpReputationList = {},
-        AWSManagedRulesCommonRuleSet = {}
+        AWSManagedRulesCommonRuleSet          = {}
       })
 
       blocked_ip_cidrs  = optional(set(string), [])

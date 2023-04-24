@@ -70,22 +70,22 @@ resource "aws_wafv2_web_acl" "this" {
             content {
               action_to_use {
                 dynamic "allow" {
-                  for_each = rule_action_override.value == "allow" ? {1:1} : {}
+                  for_each = rule_action_override.value == "allow" ? { 1 : 1 } : {}
                   content {}
                 }
 
                 dynamic "block" {
-                  for_each = rule_action_override.value == "block" ? {1:1} : {}
+                  for_each = rule_action_override.value == "block" ? { 1 : 1 } : {}
                   content {}
                 }
 
                 dynamic "captcha" {
-                  for_each = rule_action_override.value == "captcha" ? {1:1} : {}
+                  for_each = rule_action_override.value == "captcha" ? { 1 : 1 } : {}
                   content {}
                 }
 
                 dynamic "count" {
-                  for_each = rule_action_override.value == "count" ? {1:1} : {}
+                  for_each = rule_action_override.value == "count" ? { 1 : 1 } : {}
                   content {}
                 }
               }
