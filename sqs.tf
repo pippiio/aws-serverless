@@ -9,9 +9,15 @@ resource "aws_sqs_queue" "this" {
   visibility_timeout_seconds = each.value.visibility_timeout_seconds
 
   kms_master_key_id = local.kms_arn
-  policy            = data.aws_iam_policy_document.queue[each.key].json
 
   tags = merge({}, local.default_tags)
+}
+
+resource "aws_sqs_queue_policy" "this" {
+  for_each = toset(keys(local.config.queue))
+
+  queue_url = aws_sqs_queue.this[each.value].id
+  policy    = data.aws_iam_policy_document.queue[each.value].json
 }
 
 resource "aws_sqs_queue_redrive_policy" "dead_letter_policy" {
@@ -31,7 +37,7 @@ data "aws_iam_policy_document" "queue" {
   statement {
     sid       = "Enable IAM User Permissions"
     actions   = ["sqs:*"]
-    resources = ["arn:aws:sqs:${local.region_name}:${local.account_id}:${local.name_prefix}${each.key}"]
+    resources = [aws_sqs_queue.this[each.key].arn]
 
     principals {
       type        = "AWS"
@@ -40,7 +46,7 @@ data "aws_iam_policy_document" "queue" {
   }
 
   dynamic "statement" {
-    // find all functions with target equal current queue and return a distinct list of all the function keys keys
+    // find all functions with target equal to current queue and return a list of all the functions keys
     for_each = flatten([for target_key, val in transpose({
       for func_key, func_val in local.config.function
       : func_key => keys(func_val.target.queue) })
@@ -51,7 +57,7 @@ data "aws_iam_policy_document" "queue" {
     content {
       sid       = "Allow ${statement.value} Lambda SendMessage"
       actions   = ["sqs:SendMessage"]
-      resources = ["arn:aws:sqs:${local.region_name}:${local.account_id}:${var.name_prefix}${each.key}"]
+      resources = [aws_sqs_queue.this[each.key].arn]
 
       principals {
         type        = "Service"
@@ -61,7 +67,7 @@ data "aws_iam_policy_document" "queue" {
       condition {
         test     = "ArnEquals"
         variable = "aws:SourceArn"
-        values   = ["arn:aws:lambda:${local.region_name}:${local.account_id}:${local.name_prefix}${statement.value}"]
+        values   = [aws_lambda_function.function[statement.value].arn]
       }
     }
   }
