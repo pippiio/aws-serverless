@@ -160,6 +160,21 @@ resource "aws_lambda_function" "function" {
   tags = local.default_tags
 }
 
+resource "aws_lambda_event_source_mapping" "sqs" {
+  for_each = { for val in flatten([ 
+    for func_name, func in local.config.function : [ 
+      for queue_name, queue in func.trigger.queue : {
+        func = func_name
+        queue = queue_name
+        queue_arn = aws_sqs_queue.this[queue_name].arn
+      }
+    ] 
+  ]) : "${val.func}-${val.queue}" => val }
+
+  function_name    = aws_lambda_function.function[each.value.func].function_name
+  event_source_arn = each.value.queue_arn
+}
+
 data "aws_ssm_parameter" "function" {
   for_each = {
     for entry in flatten([
