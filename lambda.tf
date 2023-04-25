@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "function" {
 
   statement {
     sid       = "KMS"
-    resources = [local.kms_arn]
+    resources = [data.aws_kms_key.from_alias.arn]
     actions = [
       "kms:Encrypt",
       "kms:Decrypt",
