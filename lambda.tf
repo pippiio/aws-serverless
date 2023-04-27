@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "function" {
 
   statement {
     sid       = "KMS"
-    resources = [local.kms_arn]
+    resources = [data.aws_kms_key.from_alias.arn]
     actions = [
       "kms:Encrypt",
       "kms:Decrypt",
@@ -42,7 +42,7 @@ data "aws_iam_policy_document" "function" {
     for_each = length(each.value.trigger.queue) > 0 ? { enabled = true } : {}
     content {
       sid       = "SQSTriggers"
-      resources = [ for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn ]
+      resources = [for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn]
       effect    = "Allow"
       actions = [
         "sqs:ReceiveMessage",
@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "function" {
     for_each = length(each.value.target.queue) > 0 ? { enabled = true } : {}
     content {
       sid       = "SQSTargets"
-      resources = [ for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn ]
+      resources = [for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn]
       effect    = "Allow"
       actions   = ["sqs:SendMessage"]
     }
@@ -117,9 +117,9 @@ resource "aws_lambda_function" "function" {
   timeout       = each.value.timeout_seconds
   memory_size   = each.value.memory_size
 
-  s3_bucket         = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null
-  s3_key            = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].key : null
-  source_code_hash  = each.value.source.hash
+  s3_bucket        = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null
+  s3_key           = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].key : null
+  source_code_hash = each.value.source.hash
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
@@ -161,18 +161,21 @@ resource "aws_lambda_function" "function" {
 }
 
 resource "aws_lambda_event_source_mapping" "sqs" {
-  for_each = { for val in flatten([ 
-    for func_name, func in local.config.function : [ 
+  for_each = { for val in flatten([
+    for func_name, func in local.config.function : [
       for queue_name, queue in func.trigger.queue : {
-        func = func_name
-        queue = queue_name
-        queue_arn = aws_sqs_queue.this[queue_name].arn
+        func          = func_name
+        queue         = queue_name
+        batch_size    = queue.batch_size
+        max_batch_sec = queue.maximum_batching_window_in_seconds
       }
-    ] 
+    ]
   ]) : "${val.func}-${val.queue}" => val }
 
-  function_name    = aws_lambda_function.function[each.value.func].function_name
-  event_source_arn = each.value.queue_arn
+  function_name                      = aws_lambda_function.function[each.value.func].function_name
+  event_source_arn                   = aws_sqs_queue.this[each.value.queue].arn
+  batch_size                         = each.value.batch_size
+  maximum_batching_window_in_seconds = each.value.max_batch_sec
 }
 
 data "aws_ssm_parameter" "function" {

@@ -34,6 +34,27 @@ data "aws_iam_policy_document" "kms" {
   }
 
   statement {
+    sid       = "Allow SQS"
+    resources = ["*"]
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["sqs.amazonaws.com"]
+    }
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:sqs:${local.region_name}:${local.account_id}:${local.name_prefix}*"]
+    }
+  }
+
+  statement {
     sid       = "Allow Lambda"
     resources = ["*"]
     actions = [

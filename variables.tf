@@ -131,9 +131,9 @@ variable "config" {
 
       aws_managed_rules = optional(map(object({
         rule_action_override = optional(map(string), {})
-      })), {
+        })), {
         AWSManagedRulesAmazonIpReputationList = {},
-        AWSManagedRulesCommonRuleSet = {}
+        AWSManagedRulesCommonRuleSet          = {}
       })
 
       blocked_ip_cidrs  = optional(set(string), [])
