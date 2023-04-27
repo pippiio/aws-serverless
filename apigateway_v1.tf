@@ -2,6 +2,7 @@ resource "aws_api_gateway_rest_api" "this" {
   count = local.enable_rest_api_gateway
 
   name = "${var.name_prefix}rest-api"
+  binary_media_types = local.binary_media_types
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -25,7 +26,6 @@ resource "aws_api_gateway_rest_api" "this" {
             type                 = "AWS_PROXY"
             uri                  = aws_lambda_function.function[v.func_name].invoke_arn
           }
-          x-amazon-apigateway-binary-media-types = v.endpoint.binary_media_types
         }
       }
     }
