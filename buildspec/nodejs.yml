@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: ${version}
+    commands:
+      - node -v
+      - npm -v
+
+  pre_build:
+    commands:
+      - echo "Running npm install..."
+      - npm install
+
+  build:
+    commands:
+      - echo "Running npm build..."
+      - npm run build
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: './build'

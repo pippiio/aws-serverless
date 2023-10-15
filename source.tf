@@ -27,8 +27,18 @@ resource "random_pet" "source" {
 resource "aws_s3_bucket" "source" {
   count = local.enable_source_bucket
 
-  bucket = "${local.name_prefix}source-${random_pet.source.id}"
-  tags   = local.default_tags
+  bucket        = "${local.name_prefix}source-${random_pet.source.id}"
+  force_destroy = true
+  tags          = local.default_tags
+}
+
+resource "aws_s3_bucket_versioning" "source" {
+  count = local.enable_source_bucket
+
+  bucket = aws_s3_bucket.source[0].bucket
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "source" {
@@ -67,4 +77,8 @@ resource "aws_s3_object" "source" {
   lifecycle {
     create_before_destroy = true
   }
+
+  # depends_on = [
+  #   aws_cloudwatch_log_group.build
+  # ]
 }

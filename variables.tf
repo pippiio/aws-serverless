@@ -109,7 +109,7 @@ variable "config" {
             authorizer_cedentials = optional(string)
             ttl                   = optional(number, 60)
           }))
-          binary_media_types    = optional(list(string), [])
+          binary_media_types = optional(list(string), [])
         })), {})
         #     file
         #     log
@@ -185,8 +185,8 @@ variable "config" {
   ##### Function #####
 
   validation {
-    error_message = "Invalid source type. Valid values includes [s3, ecr, git, local]."
-    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "git", "local"], function.source.type)])), true)
+    error_message = "Invalid source type. Valid values includes [s3, ecr, github, bitbucket, local]."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "github", "bitbucket", "local"], function.source.type)])), true)
   }
 
   validation {
