@@ -124,7 +124,7 @@ variable "config" {
         })), {})
         #   function
       }), {})
-    })))
+    })), {})
 
     firewall = optional(object({
       block_by_default = optional(bool, false)
