@@ -1,5 +1,5 @@
 data "aws_iam_policy_document" "assume_lambda" {
-  for_each = local.config.function
+  for_each = var.functions
 
   statement {
     sid     = "LambdaAssumeRole"
@@ -13,7 +13,7 @@ data "aws_iam_policy_document" "assume_lambda" {
 }
 
 data "aws_iam_policy_document" "function" {
-  for_each = local.config.function
+  for_each = var.functions
 
   statement {
     sid       = "CloudWatchLogs"
@@ -38,36 +38,36 @@ data "aws_iam_policy_document" "function" {
     effect = "Allow"
   }
 
-  dynamic "statement" {
-    for_each = length(each.value.trigger.queue) > 0 ? { enabled = true } : {}
-    content {
-      sid       = "SQSTriggers"
-      resources = [for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn]
-      effect    = "Allow"
-      actions = [
-        "sqs:ReceiveMessage",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueAttributes"
-      ]
-    }
-  }
+  # dynamic "statement" {
+  #   for_each = length(each.value.trigger.queue) > 0 ? { enabled = true } : {}
+  #   content {
+  #     sid       = "SQSTriggers"
+  #     resources = [for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn]
+  #     effect    = "Allow"
+  #     actions = [
+  #       "sqs:ReceiveMessage",
+  #       "sqs:DeleteMessage",
+  #       "sqs:GetQueueAttributes"
+  #     ]
+  #   }
+  # }
 
-  dynamic "statement" {
-    for_each = length(each.value.target.queue) > 0 ? { enabled = true } : {}
-    content {
-      sid       = "SQSTargets"
-      resources = [for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn]
-      effect    = "Allow"
-      actions   = ["sqs:SendMessage"]
-    }
-  }
+  # dynamic "statement" {
+  #   for_each = length(each.value.target.queue) > 0 ? { enabled = true } : {}
+  #   content {
+  #     sid       = "SQSTargets"
+  #     resources = [for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn]
+  #     effect    = "Allow"
+  #     actions   = ["sqs:SendMessage"]
+  #   }
+  # }
 }
 
 resource "aws_cloudwatch_log_group" "function" {
-  for_each = local.config.function
+  for_each = var.functions
 
   name              = "/aws/lambda/${var.name_prefix}${each.key}"
-  retention_in_days = local.config.log_retention_in_days
+  retention_in_days = var.config.log_retention_in_days
   kms_key_id        = local.kms_arn
   tags              = local.default_tags
 }
@@ -82,7 +82,7 @@ resource "aws_lambda_permission" "rest" {
 }
 
 resource "aws_iam_role" "function" {
-  for_each = local.config.function
+  for_each = var.functions
 
   name               = "${var.name_prefix}lambda-${each.key}-role"
   assume_role_policy = data.aws_iam_policy_document.assume_lambda[each.key].json
