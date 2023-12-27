@@ -77,8 +77,4 @@ resource "aws_s3_object" "source" {
   lifecycle {
     create_before_destroy = true
   }
-
-  # depends_on = [
-  #   aws_cloudwatch_log_group.build
-  # ]
 }

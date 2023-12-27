@@ -185,8 +185,8 @@ variable "config" {
   ##### Function #####
 
   validation {
-    error_message = "Invalid source type. Valid values includes [s3, ecr, github, bitbucket, local]."
-    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "github", "bitbucket", "local"], function.source.type)])), true)
+    error_message = "Invalid source type. Valid values includes [s3, ecr, local]."
+    condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "local"], function.source.type)])), true)
   }
 
   validation {
