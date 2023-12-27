@@ -1,12 +1,12 @@
 data "aws_s3_object" "source" {
   for_each = { for key, value in var.functions : key => value if value.source.type == "s3" }
-  
+
   bucket   = split("/", trimprefix(each.value.source.path, "s3://"))[0]
   key      = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
 }
 
 data "archive_file" "source" {
-  for_each = { for function, config in var.config.function : function => config.source.path if config.source.type == "local" }
+  for_each = { for function_key, function in var.functions : function_key => function.source.path if function.source.type == "local" }
 
   type        = "zip"
   source_dir  = each.value
@@ -18,6 +18,8 @@ locals {
 }
 
 resource "random_pet" "source" {
+  count = local.enable_source_bucket
+
   keepers = {
     account = local.region_name
     region  = local.account_id
@@ -28,7 +30,7 @@ resource "random_pet" "source" {
 resource "aws_s3_bucket" "source" {
   count = local.enable_source_bucket
 
-  bucket        = "${local.name_prefix}source-${random_pet.source.id}"
+  bucket        = "${local.name_prefix}source-${random_pet.source[0].id}"
   force_destroy = true
   tags          = local.default_tags
 }
@@ -67,7 +69,7 @@ resource "aws_s3_bucket_public_access_block" "source" {
 }
 
 resource "aws_s3_object" "source" {
-  for_each = { for function, config in var.config.function : function => config.source.path if config.source.type == "local" }
+  for_each = { for function_key, function in var.functions : function_key => function.source.path if function.source.type == "local" }
 
   bucket                 = aws_s3_bucket.source[0].bucket
   key                    = "${each.key}.zip"
