@@ -72,14 +72,14 @@ resource "aws_cloudwatch_log_group" "function" {
   tags              = local.default_tags
 }
 
-resource "aws_lambda_permission" "rest" {
-  for_each = local.enable_rest_api_gateway == 1 ? aws_lambda_function.function : {}
+# resource "aws_lambda_permission" "rest" {
+#   for_each = local.enable_rest_api_gateway == 1 ? aws_lambda_function.function : {}
 
-  action        = "lambda:InvokeFunction"
-  function_name = each.value.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${split("/", one(aws_api_gateway_deployment.this).execution_arn)[0]}/*"
-}
+#   action        = "lambda:InvokeFunction"
+#   function_name = each.value.function_name
+#   principal     = "apigateway.amazonaws.com"
+#   source_arn    = "${split("/", one(aws_api_gateway_deployment.this).execution_arn)[0]}/*"
+# }
 
 resource "aws_iam_role" "function" {
   for_each = var.functions
@@ -102,14 +102,8 @@ resource "aws_iam_role" "function" {
   }
 }
 
-data "aws_s3_object" "function_source" {
-  for_each = { for key, value in local.config.function : key => value if value.source.type == "s3" }
-  bucket   = split("/", trimprefix(each.value.source.path, "s3://"))[0]
-  key      = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
-}
-
 resource "aws_lambda_function" "function" {
-  for_each = local.config.function
+  for_each = var.functions
 
   function_name = "${var.name_prefix}${each.key}"
   description   = each.value.description
@@ -117,8 +111,15 @@ resource "aws_lambda_function" "function" {
   timeout       = each.value.timeout_seconds
   memory_size   = each.value.memory_size
 
-  s3_bucket        = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null
-  s3_key           = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].key : null
+  s3_bucket = try({
+    "s3"    = try(data.aws_s3_object.function_source[each.key].bucket, null)
+    "local" = try(aws_s3_bucket.source[0].bucket, null)
+  }[each.value.source.type], null)
+  s3_key = try({
+    "s3"    = try(data.aws_s3_object.function_source[each.key].key, null)
+    "local" = try(aws_s3_object.source[each.key].key, null)
+  }[each.value.source.type], null)
+
   source_code_hash = each.value.source.hash
 
   handler = each.value.source.handler
@@ -134,8 +135,7 @@ resource "aws_lambda_function" "function" {
   dynamic "environment" {
     for_each = try([
       merge(
-        {
-          for env_name, env_var in each.value.environment_variable :
+        { for env_name, env_var in each.value.environment_variable :
           env_name => env_var.value
           if env_var.type == "text"
         },
@@ -144,11 +144,11 @@ resource "aws_lambda_function" "function" {
           env_name => data.aws_ssm_parameter.function["${each.key}:${env_var.value}"].value
           if env_var.type == "ssm"
         },
-        {
-          for queue_name, queue in each.value.target.queue :
-          queue.env_key => aws_sqs_queue.this[queue_name].url
-          if queue.env_key != null
-        }
+        # {
+        #   for queue_name, queue in each.value.target.queue :
+        #   queue.env_key => aws_sqs_queue.this[queue_name].url
+        #   if queue.env_key != null
+        # },
       )
     ], [])
 
@@ -160,28 +160,28 @@ resource "aws_lambda_function" "function" {
   tags = local.default_tags
 }
 
-resource "aws_lambda_event_source_mapping" "sqs" {
-  for_each = { for val in flatten([
-    for func_name, func in local.config.function : [
-      for queue_name, queue in func.trigger.queue : {
-        func          = func_name
-        queue         = queue_name
-        batch_size    = queue.batch_size
-        max_batch_sec = queue.maximum_batching_window_in_seconds
-      }
-    ]
-  ]) : "${val.func}-${val.queue}" => val }
+# resource "aws_lambda_event_source_mapping" "sqs" {
+#   for_each = { for val in flatten([
+#     for func_name, func in local.config.function : [
+#       for queue_name, queue in func.trigger.queue : {
+#         func          = func_name
+#         queue         = queue_name
+#         batch_size    = queue.batch_size
+#         max_batch_sec = queue.maximum_batching_window_in_seconds
+#       }
+#     ]
+#   ]) : "${val.func}-${val.queue}" => val }
 
-  function_name                      = aws_lambda_function.function[each.value.func].function_name
-  event_source_arn                   = aws_sqs_queue.this[each.value.queue].arn
-  batch_size                         = each.value.batch_size
-  maximum_batching_window_in_seconds = each.value.max_batch_sec
-}
+#   function_name                      = aws_lambda_function.function[each.value.func].function_name
+#   event_source_arn                   = aws_sqs_queue.this[each.value.queue].arn
+#   batch_size                         = each.value.batch_size
+#   maximum_batching_window_in_seconds = each.value.max_batch_sec
+# }
 
 data "aws_ssm_parameter" "function" {
   for_each = {
     for entry in flatten([
-      for func_key, func in local.config.function : [
+      for func_key, func in var.functions : [
         for k, v in func.environment_variable : [{
           func_name = func_key
           var_name  = k

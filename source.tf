@@ -1,8 +1,8 @@
-data "aws_s3_object" "source" {
+data "aws_s3_object" "function_source" {
   for_each = { for key, value in var.functions : key => value if value.source.type == "s3" }
 
-  bucket   = split("/", trimprefix(each.value.source.path, "s3://"))[0]
-  key      = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
+  bucket = split("/", trimprefix(each.value.source.path, "s3://"))[0]
+  key    = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
 }
 
 data "archive_file" "source" {
