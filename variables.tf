@@ -36,8 +36,8 @@ variable "functions" {
 
     source = object({
       type         = string # ecr, s3, local
-      runtime      = optional(string)
-      handler      = optional(string)
+      runtime      = string
+      handler      = string
       architecture = optional(string, "x86_64")
       path         = string
       hash         = optional(string)
@@ -55,30 +55,19 @@ variable "functions" {
         maximum_batching_window_in_seconds = optional(number, 10)
       })), {})
       #     schedule
-      https = optional(map(object({
-        method = string
-        path   = string
-        authorizer = optional(object({
-          name             = string
-          type             = optional(string, "JWT")
-          identity_sources = optional(set(string))
-          issuer_url       = optional(string)
-          audience         = optional(set(string))
-          scopes           = optional(set(string))
-        }))
-      })), {})
+      # https = optional(map(object({
+      #   method = string
+      #   path   = string
+      #   authorizer = optional(object({
+      #     name             = string
+      #     type             = optional(string, "JWT")
+      #     identity_sources = optional(set(string))
+      #     issuer_url       = optional(string)
+      #     audience         = optional(set(string))
+      #     scopes           = optional(set(string))
+      #   }))
+      # })), {})
 
-      rest = optional(map(object({
-        method = string
-        path   = string
-        authorizer = optional(object({
-          name                  = string
-          type                  = optional(string, "JWT") # token, request
-          authorizer_cedentials = optional(string)
-          ttl                   = optional(number, 60)
-        }))
-        binary_media_types = optional(list(string), [])
-      })), {})
       #     file
       #     log
       #     email
@@ -111,6 +100,31 @@ variable "functions" {
   #     rule_groups       = optional(map(string), {})
   #   }), {})
   # })
+}
+
+variable "restapi" {
+  type = object({
+    domain     = optional(string)
+    location   = optional(string, "regional") # regional, edge, private
+    log_format = optional(string, "clf")
+
+    endpoints = optional(set(object({
+      method                = string
+      path                  = string
+      type                  = optional(string, "function") # mock, function, http
+      target                = optional(string)
+      loglevel              = optional(string, "info")
+      throttling_rate_limit = optional(number, 100)
+      authorizer = optional(object({
+        name                  = string
+        type                  = optional(string, "JWT") # token, request
+        authorizer_cedentials = optional(string)
+        ttl                   = optional(number, 60)
+      }))
+      binary_media_types = optional(list(string), [])
+    })), [])
+  })
+  default = {}
 }
 
 # variable "config" {
