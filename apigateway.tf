@@ -1,115 +1,115 @@
-resource "aws_apigatewayv2_api" "this" {
-  count = local.enable_https_api_gateway
+# resource "aws_apigatewayv2_api" "this" {
+#   count = local.enable_https_api_gateway
 
-  name          = "${var.name_prefix}https-api"
-  protocol_type = "HTTP"
-  tags          = local.default_tags
-}
+#   name          = "${var.name_prefix}https-api"
+#   protocol_type = "HTTP"
+#   tags          = local.default_tags
+# }
 
-resource "aws_apigatewayv2_stage" "this" {
-  count = local.enable_https_api_gateway
+# resource "aws_apigatewayv2_stage" "this" {
+#   count = local.enable_https_api_gateway
 
-  api_id = one(aws_apigatewayv2_api.this).id
+#   api_id = one(aws_apigatewayv2_api.this).id
 
-  name        = "$default"
-  auto_deploy = true
+#   name        = "$default"
+#   auto_deploy = true
 
-  access_log_settings {
-    destination_arn = one(aws_cloudwatch_log_group.api_gateway).arn
+#   access_log_settings {
+#     destination_arn = one(aws_cloudwatch_log_group.api_gateway).arn
 
-    format = jsonencode({
-      requestId               = "$context.requestId"
-      sourceIp                = "$context.identity.sourceIp"
-      requestTime             = "$context.requestTime"
-      protocol                = "$context.protocol"
-      httpMethod              = "$context.httpMethod"
-      resourcePath            = "$context.resourcePath"
-      routeKey                = "$context.routeKey"
-      status                  = "$context.status"
-      responseLength          = "$context.responseLength"
-      integrationErrorMessage = "$context.integrationErrorMessage"
-    })
-  }
+#     format = jsonencode({
+#       requestId               = "$context.requestId"
+#       sourceIp                = "$context.identity.sourceIp"
+#       requestTime             = "$context.requestTime"
+#       protocol                = "$context.protocol"
+#       httpMethod              = "$context.httpMethod"
+#       resourcePath            = "$context.resourcePath"
+#       routeKey                = "$context.routeKey"
+#       status                  = "$context.status"
+#       responseLength          = "$context.responseLength"
+#       integrationErrorMessage = "$context.integrationErrorMessage"
+#     })
+#   }
 
-  tags = local.default_tags
-}
+#   tags = local.default_tags
+# }
 
-resource "aws_apigatewayv2_integration" "this" {
-  for_each = {
-    for func_name, func in local.config.function : func_name => func
-    if length(func.trigger.https) > 0
-  }
+# resource "aws_apigatewayv2_integration" "this" {
+#   for_each = {
+#     for func_name, func in local.config.function : func_name => func
+#     if length(func.trigger.https) > 0
+#   }
 
-  api_id      = one(aws_apigatewayv2_api.this).id
-  description = "Endpoint integration for ${each.key} lambda"
+#   api_id      = one(aws_apigatewayv2_api.this).id
+#   description = "Endpoint integration for ${each.key} lambda"
 
-  integration_uri    = aws_lambda_function.function[each.key].invoke_arn
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
+#   integration_uri    = aws_lambda_function.function[each.key].invoke_arn
+#   integration_type   = "AWS_PROXY"
+#   integration_method = "POST"
 
-  payload_format_version = "2.0"
-}
+#   payload_format_version = "2.0"
+# }
 
-resource "aws_apigatewayv2_route" "default" {
-  for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer == null }
+# resource "aws_apigatewayv2_route" "default" {
+#   for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer == null }
 
-  api_id = one(aws_apigatewayv2_api.this).id
+#   api_id = one(aws_apigatewayv2_api.this).id
 
-  route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
-  target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
-}
+#   route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
+#   target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
+# }
 
-resource "aws_apigatewayv2_route" "jwt_auth" {
-  for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer != null && try(v.endpoint.authorizer.type, "") == "JWT" }
+# resource "aws_apigatewayv2_route" "jwt_auth" {
+#   for_each = { for k, v in local.https_endpoints : k => v if v.endpoint.authorizer != null && try(v.endpoint.authorizer.type, "") == "JWT" }
 
-  api_id = one(aws_apigatewayv2_api.this).id
+#   api_id = one(aws_apigatewayv2_api.this).id
 
-  route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
-  target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
+#   route_key = "${each.value.endpoint.method} ${each.value.endpoint.path}"
+#   target    = "integrations/${aws_apigatewayv2_integration.this[each.value.func_name].id}"
 
-  authorization_type   = "JWT"
-  authorizer_id        = aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id
-  authorization_scopes = each.value.endpoint.authorizer.scopes
-}
+#   authorization_type   = "JWT"
+#   authorizer_id        = aws_apigatewayv2_authorizer.this[each.value.endpoint.authorizer.name].id
+#   authorization_scopes = each.value.endpoint.authorizer.scopes
+# }
 
-resource "aws_lambda_permission" "api_gateway" {
-  for_each = local.https_endpoints
+# resource "aws_lambda_permission" "api_gateway" {
+#   for_each = local.https_endpoints
 
-  statement_id  = "AllowExecutionFromAPIGateway_${each.value.func_name}_${each.value.endpoint_name}"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.function[each.value.func_name].function_name
+#   statement_id  = "AllowExecutionFromAPIGateway_${each.value.func_name}_${each.value.endpoint_name}"
+#   action        = "lambda:InvokeFunction"
+#   function_name = aws_lambda_function.function[each.value.func_name].function_name
 
-  principal  = "apigateway.amazonaws.com"
-  source_arn = "${one(aws_apigatewayv2_api.this).execution_arn}/${one(aws_apigatewayv2_stage.this).name}/${each.value.endpoint.method}${each.value.endpoint.path}"
-}
+#   principal  = "apigateway.amazonaws.com"
+#   source_arn = "${one(aws_apigatewayv2_api.this).execution_arn}/${one(aws_apigatewayv2_stage.this).name}/${each.value.endpoint.method}${each.value.endpoint.path}"
+# }
 
-resource "aws_cloudwatch_log_group" "api_gateway" {
-  count = local.enable_https_api_gateway
+# resource "aws_cloudwatch_log_group" "api_gateway" {
+#   count = local.enable_https_api_gateway
 
-  name              = "/aws/api_gateway/${aws_apigatewayv2_api.this[0].name}"
-  retention_in_days = local.config.log_retention_in_days
-  kms_key_id        = local.kms_arn
+#   name              = "/aws/api_gateway/${aws_apigatewayv2_api.this[0].name}"
+#   retention_in_days = local.config.log_retention_in_days
+#   kms_key_id        = local.kms_arn
 
-  tags = local.default_tags
-}
+#   tags = local.default_tags
+# }
 
-resource "aws_apigatewayv2_authorizer" "this" {
-  for_each = { for key, value in {
-    for auth in values(local.https_endpoints)[*].endpoint.authorizer
-    : auth.name => {
-      for k, v in auth
-      : k => v
-      if v != null
-    }... if auth != null
-  } : key => merge(value...) }
+# resource "aws_apigatewayv2_authorizer" "this" {
+#   for_each = { for key, value in {
+#     for auth in values(local.https_endpoints)[*].endpoint.authorizer
+#     : auth.name => {
+#       for k, v in auth
+#       : k => v
+#       if v != null
+#     }... if auth != null
+#   } : key => merge(value...) }
 
-  api_id           = one(aws_apigatewayv2_api.this).id
-  authorizer_type  = "JWT"
-  identity_sources = each.value.identity_sources
-  name             = each.key
+#   api_id           = one(aws_apigatewayv2_api.this).id
+#   authorizer_type  = "JWT"
+#   identity_sources = each.value.identity_sources
+#   name             = each.key
 
-  jwt_configuration {
-    audience = each.value.audience
-    issuer   = each.value.issuer_url
-  }
-}
+#   jwt_configuration {
+#     audience = each.value.audience
+#     issuer   = each.value.issuer_url
+#   }
+# }

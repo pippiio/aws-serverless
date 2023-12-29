@@ -27,17 +27,20 @@ locals {
   #   ]) : "${value.func_name}/${value.endpoint_name}" => value
   # }
 
-  rest_endpoints = {
-    for value in flatten([
-      for func_name, func in var.functions : [
-        for http_key, endpoint in func.trigger.rest : {
-          func_name     = func_name
-          endpoint_name = http_key
-          endpoint      = endpoint
-        }
-      ]
-    ]) : "${value.func_name}/${value.endpoint_name}" => value
-  }
+  enable_rest_api_gateway = length(var.restapi.endpoints) > 0 ? 1 : 0
+  # enable_rest_api_gateway = length(local.rest_endpoints) > 0 ? 1 : 0
+  # rest_endpoints = {
+  #   for value in flatten([
+  #     for func_name, func in var.functions : [
+  #       # for http_key, endpoint in func.trigger.rest : {
+  #       for  endpoint in func.trigger.rest : {
+  #         func_name     = func_name
+  #         # endpoint_name = http_key
+  #         endpoint      = endpoint
+  #       }
+  #     ]
+  #   ]) : "${value.func_name}/${value.endpoint_name}" => value
+  # }
 
   # binary_media_types = distinct(flatten([
   #   for func_name, func in local.config.function : flatten([
@@ -47,8 +50,6 @@ locals {
   #   ])
   # )
 
-  # enable_https_api_gateway = length(local.https_endpoints) > 0 ? 1 : 0
-  enable_rest_api_gateway = length(local.rest_endpoints) > 0 ? 1 : 0
 
   # rest_stage_name = local.enable_rest_api_gateway == 1 ? (split("/", values(local.rest_endpoints)[0].endpoint.path)[1]) : null
 }
