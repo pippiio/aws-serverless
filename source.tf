@@ -1,8 +1,15 @@
+locals {
+  local_files          = { for function_key, function in var.functions : function_key => fileset(function.source.path, "**/*") if function.source.type == "local" }
+  enable_source_bucket = length(data.archive_file.source) > 0 ? 1 : 0
+}
+
 data "aws_s3_object" "function_source" {
   for_each = { for key, value in var.functions : key => value if value.source.type == "s3" }
 
   bucket = split("/", trimprefix(each.value.source.path, "s3://"))[0]
   key    = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
+
+  depends_on = [local.local_files]
 }
 
 data "archive_file" "source" {
@@ -11,10 +18,6 @@ data "archive_file" "source" {
   type        = "zip"
   source_dir  = each.value
   output_path = "${each.key}.zip"
-}
-
-locals {
-  enable_source_bucket = length(data.archive_file.source) > 0 ? 1 : 0
 }
 
 resource "random_pet" "source" {

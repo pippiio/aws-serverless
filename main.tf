@@ -49,9 +49,6 @@ locals {
   #     ])
   #   ])
   # )
-
-
-  # rest_stage_name = local.enable_rest_api_gateway == 1 ? (split("/", values(local.rest_endpoints)[0].endpoint.path)[1]) : null
 }
 
 resource "random_password" "this" {
