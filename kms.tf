@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "kms" {
     }
 
     condition {
-      test     = "ArnEquals"
+      test     = "ArnEquals" # Like?
       variable = "aws:SourceArn"
       values   = ["arn:aws:sns:${local.region_name}:${local.account_id}:${local.name_prefix}*"]
     }
@@ -96,7 +96,10 @@ data "aws_iam_policy_document" "kms" {
     condition {
       test     = "ArnEquals"
       variable = "kms:EncryptionContext:aws:logs:arn"
-      values   = ["arn:aws:logs:${local.region_name}:${local.account_id}:log-group:/aws/*/${local.name_prefix}*"]
+      values = [
+        "arn:aws:logs:${local.region_name}:${local.account_id}:log-group:/aws/*/${local.name_prefix}*",
+        "arn:aws:logs:${local.region_name}:${local.account_id}:log-group:/aws/apigw/*/${local.name_prefix}*",
+      ]
     }
   }
 }

@@ -1,5 +1,5 @@
 resource "aws_sqs_queue" "this" {
-  for_each = local.config.queue
+  for_each = var.queue
 
   name                       = "${var.name_prefix}${each.key}"
   delay_seconds              = each.value.delay_seconds
@@ -14,14 +14,14 @@ resource "aws_sqs_queue" "this" {
 }
 
 resource "aws_sqs_queue_policy" "this" {
-  for_each = toset(keys(local.config.queue))
+  for_each = toset(keys(var.queue))
 
   queue_url = aws_sqs_queue.this[each.value].id
   policy    = data.aws_iam_policy_document.queue[each.value].json
 }
 
 resource "aws_sqs_queue_redrive_policy" "dead_letter_policy" {
-  for_each = { for k, v in local.config.queue : k => v.dead_letter_queue if v.dead_letter_queue != null }
+  for_each = { for k, v in var.queue : k => v.dead_letter_queue if v.dead_letter_queue != null }
 
   queue_url = aws_sqs_queue.this[each.key].id
   redrive_policy = jsonencode({
@@ -30,9 +30,8 @@ resource "aws_sqs_queue_redrive_policy" "dead_letter_policy" {
   })
 }
 
-
 data "aws_iam_policy_document" "queue" {
-  for_each = local.config.queue
+  for_each = var.queue
 
   statement {
     sid       = "Enable IAM User Permissions"
@@ -48,7 +47,7 @@ data "aws_iam_policy_document" "queue" {
   dynamic "statement" {
     // find all functions with target equal to current queue and return a list of all the functions keys
     for_each = flatten([for target_key, val in transpose({
-      for func_key, func_val in local.config.function
+      for func_key, func_val in var.function
       : func_key => keys(func_val.target.queue) })
       : val
       if target_key == each.key
@@ -71,5 +70,4 @@ data "aws_iam_policy_document" "queue" {
       }
     }
   }
-
 }

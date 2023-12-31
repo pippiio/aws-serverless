@@ -1,5 +1,5 @@
 data "aws_iam_policy_document" "topic" {
-  for_each = { for idx, topic in local.config.topic : idx => topic.publisher if try(length(topic.publisher) > 0, false) }
+  for_each = { for idx, topic in var.topic : idx => topic.publisher if try(length(topic.publisher) > 0, false) }
 
   dynamic "statement" {
     for_each = { for idx, publisher in each.value : idx => publisher if publisher.type == "account" }
@@ -81,7 +81,7 @@ data "aws_iam_policy_document" "topic" {
 }
 
 resource "aws_sns_topic" "topic" {
-  for_each = local.config.topic
+  for_each = var.topic
 
   name                        = format("${var.name_prefix}${each.key}%s", coalesce(each.value.fifo, false) ? ".fifo" : "")
   display_name                = title(replace(each.key, "/[-_]+/", " "))
@@ -102,7 +102,7 @@ resource "aws_sns_topic_policy" "topic" {
 
 resource "aws_sns_topic_subscription" "topic" {
   // For each topic's subscription
-  for_each = { for entry in flatten([for topic_idx, topic in local.config.topic : [for subscriber_idx, subscriber in topic.subscriber : {
+  for_each = { for entry in flatten([for topic_idx, topic in var.topic : [for subscriber_idx, subscriber in topic.subscriber : {
     topic_idx      = topic_idx
     subscriber_idx = subscriber_idx
     subscriber     = subscriber
