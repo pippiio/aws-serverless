@@ -83,23 +83,25 @@ variable "function" {
     }), {})
   }))
 
-  #   firewall = optional(object({
-  #     block_by_default = optional(bool, false)
+  validation {
+    error_message = "Invalid source type. Valid values includes [s3, ecr, local]."
+    condition     = try(alltrue(flatten([for function in values(var.function) : contains(["s3", "ecr", "local"], function.source.type)])), true)
+  }
 
-  #     aws_managed_rules = optional(map(object({
-  #       rule_action_override = optional(map(string), {})
-  #       })), {
-  #       AWSManagedRulesAmazonIpReputationList = {},
-  #       AWSManagedRulesCommonRuleSet          = {}
-  #     })
+  validation {
+    error_message = "Invalid path for s3 source. The path must be a valid s3 uri (s3:// can be omited). E.g. 's3://bucket_name/key/to/object' or 'bucket_name/key/to/object'."
+    condition     = try(alltrue(flatten([for function in values(var.function) : length(regexall("^(s3:\\/\\/)?[\\w\\-]+\\/.+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
+  }
 
-  #     blocked_ip_cidrs  = optional(set(string), [])
-  #     blocked_countries = optional(set(string), [])
-  #     allowed_ip_cidrs  = optional(set(string), [])
-  #     allowed_countries = optional(set(string), [])
-  #     rule_groups       = optional(map(string), {})
-  #   }), {})
-  # })
+  validation {
+    error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
+    condition     = try(alltrue(flatten([for function in values(var.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
+  }
+
+  validation {
+    error_message = "Invalid environment variable type. Valid values includes [text, ssm]"
+    condition     = try(alltrue(flatten([for function in values(var.function) : [for env_var in values(function.environment_variable) : contains(["text", "ssm"], env_var.type)]])), true)
+  }
 }
 
 variable "restapi" {
@@ -125,6 +127,24 @@ variable "restapi" {
     })), [])
   })
   default = {}
+
+  #   firewall = optional(object({
+  #     block_by_default = optional(bool, false)
+
+  #     aws_managed_rules = optional(map(object({
+  #       rule_action_override = optional(map(string), {})
+  #       })), {
+  #       AWSManagedRulesAmazonIpReputationList = {},
+  #       AWSManagedRulesCommonRuleSet          = {}
+  #     })
+
+  #     blocked_ip_cidrs  = optional(set(string), [])
+  #     blocked_countries = optional(set(string), [])
+  #     allowed_ip_cidrs  = optional(set(string), [])
+  #     allowed_countries = optional(set(string), [])
+  #     rule_groups       = optional(map(string), {})
+  #   }), {})
+  # })
 }
 
 variable "topic" {
@@ -169,7 +189,7 @@ variable "queue" {
       max_recive_count = optional(number, 4)
     }), null)
 
-    sns_subscriptions = optional(set(string))
+    topic_subscriptions = optional(set(string))
   }))
   default = {}
 }
@@ -182,104 +202,8 @@ variable "queue" {
 #     # database = optional(map(object({})))
 
 #     function = optional(map(object({
-#       description        = optional(string)
-#       iam_role           = optional(string)
-#       timeout_seconds    = optional(number, 3)
-#       memory_size        = optional(number, 128)
-#       subnet_ids         = optional(set(string), [])
-#       security_group_ids = optional(set(string), [])
-#       iam_policies_arns  = optional(set(string))
-#       inline_policies    = optional(map(string), {})
 
-#       source = object({
-#         type         = string # ecr, s3, git, local
-#         runtime      = optional(string)
-#         handler      = optional(string)
-#         architecture = optional(string, "x86_64")
-#         path         = string
-#         hash         = optional(string)
-#       })
 
-#       environment_variable = optional(map(object({
-#         type  = optional(string, "text") # text|ssm
-#         value = string
-#       })), {})
-
-#       trigger = optional(object({
-#         #     topic = optional(string)
-#         queue = optional(map(object({
-#           batch_size                         = optional(number, 5)
-#           maximum_batching_window_in_seconds = optional(number, 10)
-#         })), {})
-#         #     schedule
-#         https = optional(map(object({
-#           method = string
-#           path   = string
-#           authorizer = optional(object({
-#             name             = string
-#             type             = optional(string, "JWT")
-#             identity_sources = optional(set(string))
-#             issuer_url       = optional(string)
-#             audience         = optional(set(string))
-#             scopes           = optional(set(string))
-#           }))
-#         })), {})
-
-#         rest = optional(map(object({
-#           method = string
-#           path   = string
-#           authorizer = optional(object({
-#             name                  = string
-#             type                  = optional(string, "JWT") # token, request
-#             authorizer_cedentials = optional(string)
-#             ttl                   = optional(number, 60)
-#           }))
-#           binary_media_types = optional(list(string), [])
-#         })), {})
-#         #     file
-#         #     log
-#         #     email
-#         #   loadbalancer
-#       }), {})
-
-#       target = optional(object({
-#         #   topic
-#         queue = optional(map(object({
-#           env_key = optional(string)
-#         })), {})
-#         #   function
-#       }), {})
-#     })), {})
-
-#     firewall = optional(object({
-#       block_by_default = optional(bool, false)
-
-#       aws_managed_rules = optional(map(object({
-#         rule_action_override = optional(map(string), {})
-#         })), {
-#         AWSManagedRulesAmazonIpReputationList = {},
-#         AWSManagedRulesCommonRuleSet          = {}
-#       })
-
-#       blocked_ip_cidrs  = optional(set(string), [])
-#       blocked_countries = optional(set(string), [])
-#       allowed_ip_cidrs  = optional(set(string), [])
-#       allowed_countries = optional(set(string), [])
-#       rule_groups       = optional(map(string), {})
-#     }), {})
-#   })
-
-#   ##### Topic #####
-
-#   validation {
-#     error_message = "Topic names can include alphanumeric characters, hyphens (-) and underscores."
-#     condition     = try(alltrue([for name in keys(var.config.topic) : length(regexall("^[a-zA-Z0-9_-]+$", name)) > 0]), true)
-#   }
-
-#   validation {
-#     error_message = "Topic policy and publisher are mutually exclusive."
-#     condition     = try(alltrue([for topic in values(var.config.topic) : !(topic.policy != null && topic.publisher != null)]), true)
-#   }
 
 #   ##### Firewall #####
 
@@ -308,21 +232,6 @@ variable "queue" {
 #   }
 
 #   ##### Function #####
-
-#   validation {
-#     error_message = "Invalid source type. Valid values includes [s3, ecr, local]."
-#     condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["s3", "ecr", "local"], function.source.type)])), true)
-#   }
-
-#   validation {
-#     error_message = "Invalid path for s3 source. The path must be a valid s3 uri (s3:// can be omited). E.g. 's3://bucket_name/key/to/object' or 'bucket_name/key/to/object'."
-#     condition     = try(alltrue(flatten([for function in values(var.config.function) : length(regexall("^(s3:\\/\\/)?[\\w\\-]+\\/.+$", function.source.path)) > 0 if function.source.type == "s3"])), true)
-#   }
-
-#   validation {
-#     error_message = "Invalid source architecture. Valid values includes [x86_64, arm64]."
-#     condition     = try(alltrue(flatten([for function in values(var.config.function) : contains(["x86_64", "arm64"], function.source.architecture)])), true)
-#   }
 
 #   ##### .trigger.https #####
 
@@ -379,8 +288,4 @@ variable "queue" {
 
 #   ##### .environment_variable ######
 
-#   validation {
-#     error_message = "Invalid environment variable type. Valid values includes [text, ssm]"
-#     condition     = try(alltrue(flatten([for function in values(var.config.function) : [for env_var in values(function.environment_variable) : contains(["text", "ssm"], env_var.type)]])), true)
-#   }
 # }

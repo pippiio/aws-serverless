@@ -134,11 +134,11 @@ resource "aws_lambda_function" "function" {
           env_name => data.aws_ssm_parameter.function["${each.key}:${env_var.value}"].value
           if env_var.type == "ssm"
         },
-        # {
-        #   for queue_name, queue in each.value.target.queue :
-        #   queue.env_key => aws_sqs_queue.this[queue_name].url
-        #   if queue.env_key != null
-        # },
+        {
+          for queue_name, queue in each.value.target.queue :
+          queue.env_key => aws_sqs_queue.this[queue_name].url
+          if queue.env_key != null
+        },
       )
     ], [])
 
@@ -152,23 +152,23 @@ resource "aws_lambda_function" "function" {
   depends_on = [aws_s3_object.source]
 }
 
-# resource "aws_lambda_event_source_mapping" "sqs" {
-#   for_each = { for val in flatten([
-#     for func_name, func in local.config.function : [
-#       for queue_name, queue in func.trigger.queue : {
-#         func          = func_name
-#         queue         = queue_name
-#         batch_size    = queue.batch_size
-#         max_batch_sec = queue.maximum_batching_window_in_seconds
-#       }
-#     ]
-#   ]) : "${val.func}-${val.queue}" => val }
+resource "aws_lambda_event_source_mapping" "sqs" {
+  for_each = { for val in flatten([
+    for func_name, func in var.function : [
+      for queue_name, queue in func.trigger.queue : {
+        func          = func_name
+        queue         = queue_name
+        batch_size    = queue.batch_size
+        max_batch_sec = queue.maximum_batching_window_in_seconds
+      }
+    ]
+  ]) : "${val.func}-${val.queue}" => val }
 
-#   function_name                      = aws_lambda_function.function[each.value.func].function_name
-#   event_source_arn                   = aws_sqs_queue.this[each.value.queue].arn
-#   batch_size                         = each.value.batch_size
-#   maximum_batching_window_in_seconds = each.value.max_batch_sec
-# }
+  function_name                      = aws_lambda_function.function[each.value.func].function_name
+  event_source_arn                   = aws_sqs_queue.this[each.value.queue].arn
+  batch_size                         = each.value.batch_size
+  maximum_batching_window_in_seconds = each.value.max_batch_sec
+}
 
 data "aws_ssm_parameter" "function" {
   for_each = {
