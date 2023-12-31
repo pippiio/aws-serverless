@@ -23,7 +23,7 @@ variable "config" {
   default = {}
 }
 
-variable "functions" {
+variable "function" {
   type = map(object({
     description        = optional(string)
     iam_role           = optional(string)
@@ -49,7 +49,7 @@ variable "functions" {
     })), {})
 
     trigger = optional(object({
-      #     topic = optional(string)
+      topic = optional(string)
       queue = optional(map(object({
         batch_size                         = optional(number, 5)
         maximum_batching_window_in_seconds = optional(number, 10)
@@ -127,42 +127,55 @@ variable "restapi" {
   default = {}
 }
 
+variable "topic" {
+  type = map(object({
+    fifo            = optional(bool)
+    delivery_policy = optional(string)
+    policy          = optional(string)
+
+    publisher = optional(map(object({
+      type   = string
+      values = set(string)
+    })))
+
+    subscriber = optional(map(object({
+      protocol = string
+      endpoint = string
+    })))
+  }))
+  default = {}
+
+  validation {
+    error_message = "Topic names can include alphanumeric characters, hyphens (-) and underscores."
+    condition     = try(alltrue([for name in keys(var.topic) : length(regexall("^[a-zA-Z0-9_-]+$", name)) > 0]), true)
+  }
+
+  validation {
+    error_message = "Topic policy and publisher are mutually exclusive."
+    condition     = try(alltrue([for topic in values(var.topic) : !(topic.policy != null && topic.publisher != null)]), true)
+  }
+}
+
+variable "queue" {
+  type = map(object({
+    public                     = bool
+    visibility_timeout_seconds = optional(number, 30)
+    message_retention_seconds  = optional(number, 86400)
+    delay_seconds              = optional(number, 90)
+    receive_wait_time_seconds  = optional(number, 10)
+
+    dead_letter_queue = optional(object({
+      name             = string
+      max_recive_count = optional(number, 4)
+    }), null)
+
+    sns_subscriptions = optional(set(string))
+  }))
+  default = {}
+}
+
 # variable "config" {
 #   type = object({
-
-#     kms_arn               = optional(string)
-#     log_retention_in_days = optional(number, 7)
-
-#     topic = optional(map(object({
-#       fifo            = optional(bool)
-#       delivery_policy = optional(string)
-#       policy          = optional(string)
-
-#       publisher = optional(map(object({
-#         type   = string
-#         values = set(string)
-#       })))
-
-#       subscriber = optional(map(object({
-#         protocol = string
-#         endpoint = string
-#       })))
-#     })), {})
-
-#     queue = optional(map(object({
-#       public                     = bool
-#       visibility_timeout_seconds = optional(number, 30)
-#       message_retention_seconds  = optional(number, 86400)
-#       delay_seconds              = optional(number, 90)
-#       receive_wait_time_seconds  = optional(number, 10)
-
-#       dead_letter_queue = optional(object({
-#         name             = string
-#         max_recive_count = optional(number, 4)
-#       }), null)
-
-#       sns_subscriptions = optional(set(string))
-#     })), {})
 
 #     # storage = optional(map(object({})))
 
