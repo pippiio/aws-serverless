@@ -1,5 +1,5 @@
 data "aws_iam_policy_document" "assume_lambda" {
-  for_each = var.functions
+  for_each = var.function
 
   statement {
     sid     = "LambdaAssumeRole"
@@ -13,7 +13,7 @@ data "aws_iam_policy_document" "assume_lambda" {
 }
 
 data "aws_iam_policy_document" "function" {
-  for_each = var.functions
+  for_each = var.function
 
   statement {
     sid       = "CloudWatchLogs"
@@ -64,7 +64,7 @@ data "aws_iam_policy_document" "function" {
 }
 
 resource "aws_cloudwatch_log_group" "function" {
-  for_each = var.functions
+  for_each = var.function
 
   name              = "/aws/lambda/${var.name_prefix}${each.key}"
   retention_in_days = var.config.log_retention_in_days
@@ -73,7 +73,7 @@ resource "aws_cloudwatch_log_group" "function" {
 }
 
 resource "aws_iam_role" "function" {
-  for_each = var.functions
+  for_each = var.function
 
   name               = "${var.name_prefix}lambda-${each.key}-role"
   assume_role_policy = data.aws_iam_policy_document.assume_lambda[each.key].json
@@ -94,7 +94,7 @@ resource "aws_iam_role" "function" {
 }
 
 resource "aws_lambda_function" "function" {
-  for_each = var.functions
+  for_each = var.function
 
   function_name = "${var.name_prefix}${each.key}"
   description   = each.value.description
@@ -173,7 +173,7 @@ resource "aws_lambda_function" "function" {
 data "aws_ssm_parameter" "function" {
   for_each = {
     for entry in flatten([
-      for func_key, func in var.functions : [
+      for func_key, func in var.function : [
         for k, v in func.environment_variable : [{
           func_name = func_key
           var_name  = k

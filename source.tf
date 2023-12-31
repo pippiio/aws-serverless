@@ -1,10 +1,10 @@
 locals {
-  local_files          = { for function_key, function in var.functions : function_key => fileset(function.source.path, "**/*") if function.source.type == "local" }
+  local_files          = { for function_key, function in var.function : function_key => fileset(function.source.path, "**/*") if function.source.type == "local" }
   enable_source_bucket = length(data.archive_file.source) > 0 ? 1 : 0
 }
 
 data "aws_s3_object" "function_source" {
-  for_each = { for key, value in var.functions : key => value if value.source.type == "s3" }
+  for_each = { for key, value in var.function : key => value if value.source.type == "s3" }
 
   bucket = split("/", trimprefix(each.value.source.path, "s3://"))[0]
   key    = trimprefix(regexall("\\/.+$", trimprefix(each.value.source.path, "s3://"))[0], "/")
@@ -13,7 +13,7 @@ data "aws_s3_object" "function_source" {
 }
 
 data "archive_file" "source" {
-  for_each = { for function_key, function in var.functions : function_key => function.source.path if function.source.type == "local" }
+  for_each = { for function_key, function in var.function : function_key => function.source.path if function.source.type == "local" }
 
   type        = "zip"
   source_dir  = each.value
@@ -72,7 +72,7 @@ resource "aws_s3_bucket_public_access_block" "source" {
 }
 
 resource "aws_s3_object" "source" {
-  for_each = { for function_key, function in var.functions : function_key => function.source.path if function.source.type == "local" }
+  for_each = { for function_key, function in var.function : function_key => function.source.path if function.source.type == "local" }
 
   bucket                 = aws_s3_bucket.source[0].bucket
   key                    = "${each.key}_${formatdate("DD-MMM-YY_HH:mm", timestamp())}.zip"
