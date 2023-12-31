@@ -110,8 +110,7 @@ resource "aws_lambda_function" "function" {
     "s3"    = try(data.aws_s3_object.function_source[each.key].key, null)
     "local" = try(aws_s3_object.source[each.key].key, null)
   }[each.value.source.type], null)
-
-  source_code_hash = each.value.source.hash
+  source_code_hash = each.value.source.type == "s3" ? each.value.source.hash : null
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
@@ -149,6 +148,8 @@ resource "aws_lambda_function" "function" {
   }
 
   tags = local.default_tags
+
+  depends_on = [aws_s3_object.source]
 }
 
 # resource "aws_lambda_event_source_mapping" "sqs" {

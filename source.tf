@@ -75,9 +75,8 @@ resource "aws_s3_object" "source" {
   for_each = { for function_key, function in var.functions : function_key => function.source.path if function.source.type == "local" }
 
   bucket                 = aws_s3_bucket.source[0].bucket
-  key                    = "${each.key}.zip"
+  key                    = "${each.key}_${formatdate("DD-MMM-YY_HH:mm", timestamp())}.zip"
   source                 = data.archive_file.source[each.key].output_path
-  etag                   = filemd5(data.archive_file.source[each.key].output_path)
   server_side_encryption = "aws:kms"
 
   lifecycle {
