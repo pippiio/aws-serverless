@@ -122,6 +122,8 @@ resource "aws_lambda_function" "function" {
   s3_object_version = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].version_id : null
   source_code_hash  = each.value.source.hash
 
+  publish = true
+
   handler = each.value.source.handler
   runtime = each.value.source.runtime
 
