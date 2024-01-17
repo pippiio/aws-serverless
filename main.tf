@@ -43,8 +43,8 @@ locals {
   binary_media_types = distinct(flatten([
     for func_name, func in local.config.function : flatten([
       for http_key, endpoint in func.trigger.rest :
-         endpoint.binary_media_types != null ? endpoint.binary_media_types : []
-      ])
+      endpoint.binary_media_types != null ? endpoint.binary_media_types : []
+    ])
     ])
   )
 

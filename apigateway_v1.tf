@@ -1,7 +1,7 @@
 resource "aws_api_gateway_rest_api" "this" {
   count = local.enable_rest_api_gateway
 
-  name = "${var.name_prefix}rest-api"
+  name               = "${var.name_prefix}rest-api"
   binary_media_types = local.binary_media_types
 
   endpoint_configuration {

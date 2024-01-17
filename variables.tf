@@ -109,7 +109,7 @@ variable "config" {
             authorizer_cedentials = optional(string)
             ttl                   = optional(number, 60)
           }))
-          binary_media_types    = optional(list(string), [])
+          binary_media_types = optional(list(string), [])
         })), {})
         #     file
         #     log
