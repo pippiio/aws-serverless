@@ -119,7 +119,6 @@ resource "aws_lambda_function" "function" {
 
   s3_bucket         = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].bucket : null
   s3_key            = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].key : null
-  s3_object_version = each.value.source.type == "s3" ? data.aws_s3_object.function_source[each.key].version_id : null
   source_code_hash  = each.value.source.type == "s3" ? lookup(data.aws_s3_object.function_source[each.key].metadata, "hash", null) : each.value.source.hash
 
   publish = true
