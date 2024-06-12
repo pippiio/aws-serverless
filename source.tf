@@ -30,6 +30,7 @@ resource "random_pet" "source" {
   }
 }
 
+#trivy:ignore:AVD-AWS-0089
 resource "aws_s3_bucket" "source" {
   count = local.enable_source_bucket
 

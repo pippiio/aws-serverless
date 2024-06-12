@@ -15,6 +15,8 @@ locals {
   kms_arn        = try(one(aws_kms_alias.this).arn, var.config.kms_arn)
   create_kms_key = var.config.kms_arn == null ? 1 : 0
 
+  ecr_registry_uri = "${local.account_id}.dkr.ecr.${local.region_name}.amazonaws.com/"
+
   # https_endpoints = {
   #   for value in flatten([
   #     for func_name, func in local.config.function : [
