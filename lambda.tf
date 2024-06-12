@@ -103,14 +103,22 @@ resource "aws_lambda_function" "function" {
   memory_size   = each.value.memory_size
 
   s3_bucket = try({
-    "s3"    = try(data.aws_s3_object.function_source[each.key].bucket, null)
-    "local" = try(aws_s3_bucket.source[0].bucket, null)
+    "s3"        = try(data.aws_s3_object.function_source[each.key].bucket, null)
+    "local"     = try(aws_s3_bucket.source[0].bucket, null)
+    "container" = null
   }[each.value.source.type], null)
   s3_key = try({
-    "s3"    = try(data.aws_s3_object.function_source[each.key].key, null)
-    "local" = try(aws_s3_object.source[each.key].key, null)
+    "s3"        = try(data.aws_s3_object.function_source[each.key].key, null)
+    "local"     = try(aws_s3_object.source[each.key].key, null)
+    "container" = null
   }[each.value.source.type], null)
   source_code_hash = each.value.source.type == "s3" ? each.value.source.hash : null
+
+  image_uri = try({
+    "container" = length(regexall("^[0-9]+.*", each.value.source.path)) == 0 ? "${local.ecr_registry_uri}${aws_ecr_pull_through_cache_rule.this[each.key].ecr_repository_prefix}/${local.container_image_paths[each.key]}" : each.value.source.path
+  }[each.value.source.type], null)
+
+  package_type = each.value.source.type == "container" ? "Image" : "Zip"
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
@@ -149,7 +157,7 @@ resource "aws_lambda_function" "function" {
 
   tags = local.default_tags
 
-  depends_on = [aws_s3_object.source]
+  depends_on = [aws_s3_object.source, null_resource.docker_pull]
 }
 
 resource "aws_lambda_event_source_mapping" "sqs" {

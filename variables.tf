@@ -15,10 +15,17 @@ variable "default_tags" {
   default     = {}
 }
 
+variable "container_registry_token" {
+  description = "Container registry token."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "config" {
   type = object({
-    kms_arn               = optional(string)
-    log_retention_in_days = optional(number, 7)
+    kms_arn                = optional(string)
+    log_retention_in_days  = optional(number, 7)
   })
   default = {}
 }
@@ -35,9 +42,11 @@ variable "function" {
     inline_policies    = optional(map(string), {})
 
     source = object({
-      type         = string # ecr, s3, local
-      runtime      = string
-      handler      = string
+      experimental_ecr_cache = optional(bool, false)
+
+      type         = string # container, s3, local
+      runtime      = optional(string)
+      handler      = optional(string)
       architecture = optional(string, "x86_64")
       path         = string
       hash         = optional(string)
@@ -84,8 +93,13 @@ variable "function" {
   }))
 
   validation {
-    error_message = "Invalid source type. Valid values includes [s3, ecr, local]."
-    condition     = try(alltrue(flatten([for function in values(var.function) : contains(["s3", "ecr", "local"], function.source.type)])), true)
+    error_message = "Invalid source path. source.experimental_ecr_cache needs to be true if source.path is not a direct ecr image uri (like 'ghcr.io' or 'registry-1.docker.io')."
+    condition = try(alltrue(flatten([for function in values(var.function) : function.source.experimental_ecr_cache || function.source.type != "container" ? true : length(regexall("^[0-9]+.*", function.source.path)) > 0])), true)
+  }
+
+  validation {
+    error_message = "Invalid source type. Valid values includes [s3, container, local]."
+    condition     = try(alltrue(flatten([for function in values(var.function) : contains(["s3", "container", "local"], function.source.type)])), true)
   }
 
   validation {
