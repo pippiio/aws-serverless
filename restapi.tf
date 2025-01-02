@@ -206,10 +206,12 @@ resource "aws_api_gateway_resource" "level9" {
 resource "aws_api_gateway_method" "restapi" {
   for_each = local.endpoints
 
-  rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
-  authorization = "NONE"
-  http_method   = each.value.method
-  resource_id   = local.restapi_resources[trimprefix(each.value.path, "/")].id
+  rest_api_id          = aws_api_gateway_rest_api.restapi[0].id
+  http_method          = each.value.method
+  resource_id          = local.restapi_resources[trimprefix(each.value.path, "/")].id
+  authorization        = try(each.value.authorizer.auth, "NONE")
+  authorizer_id        = try(aws_api_gateway_authorizer.restapi[one(keys(aws_api_gateway_authorizer.restapi))].id, null)
+  authorization_scopes = try(each.value.authorizer.scopes, [])
 }
 
 resource "aws_api_gateway_method_settings" "restapi" {
@@ -227,10 +229,10 @@ resource "aws_api_gateway_method_settings" "restapi" {
 }
 
 resource "aws_lambda_permission" "restapi" {
-  for_each = { for endpoint in var.restapi.endpoints : endpoint.target => null if endpoint.type == "function" }
+  for_each = toset([for endpoint in var.restapi.endpoints : endpoint.target if endpoint.type == "function"])
 
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.function[each.key].function_name
+  function_name = aws_lambda_function.function[each.value].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${split("/", aws_api_gateway_deployment.restapi[0].execution_arn)[0]}/*"
 }
