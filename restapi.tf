@@ -378,14 +378,14 @@ resource "aws_api_gateway_integration_response" "cors" {
 
   //cors
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  =  "'${var.restapi.cors_origin}'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.restapi.cors_origin}'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS,PUT,DELETE,PATCH'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
   }
 }
 
 resource "aws_api_gateway_gateway_response" "response_4xx" {
-  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_4XX"
 
   response_templates = {
@@ -398,7 +398,7 @@ resource "aws_api_gateway_gateway_response" "response_4xx" {
 }
 
 resource "aws_api_gateway_gateway_response" "response_5xx" {
-  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_5XX"
 
   response_templates = {
