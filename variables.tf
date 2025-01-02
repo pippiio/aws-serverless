@@ -109,6 +109,7 @@ variable "restapi" {
     domain     = optional(string)
     location   = optional(string, "regional") # regional, edge, private
     log_format = optional(string, "clf")
+    cors_origin = optional(string)
 
     endpoints = optional(set(object({
       method                = string

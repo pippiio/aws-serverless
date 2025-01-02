@@ -302,3 +302,110 @@ resource "aws_api_gateway_base_path_mapping" "restapi" {
   stage_name  = aws_api_gateway_stage.restapi[0].stage_name
   domain_name = aws_api_gateway_domain_name.restapi[0].domain_name
 }
+
+resource "aws_api_gateway_authorizer" "restapi" {
+  for_each = { for key, value in {
+    for auth in values(local.rest_endpoints)[*].endpoint.authorizer
+    : auth.name => {
+      for k, v in auth
+      : k => v
+      if v != null
+    }... if auth != null
+  } : key => merge(value...) }
+
+  rest_api_id                      = aws_api_gateway_rest_api.restapi[0].id
+  type                             = each.value.type
+  authorizer_result_ttl_in_seconds = each.value.ttl
+  name                             = each.key
+  provider_arns                    = each.value.provider_arns
+}
+
+
+
+resource "aws_api_gateway_method" "cors" {
+  for_each = local.restapi_resources
+
+  rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
+  resource_id   = each.value.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "cors" {
+  for_each = local.restapi_resources
+
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = jsonencode(
+      {
+        statusCode = 200
+      }
+    )
+  }
+
+}
+
+resource "aws_api_gateway_method_response" "cors" {
+  for_each = local.restapi_resources
+
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  status_code = 200
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "cors" {
+  for_each = local.restapi_resources
+
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  status_code = 200
+
+  //cors
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  =  "'${var.restapi.cors_origin}'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS,PUT,DELETE,PATCH'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "response_4xx" {
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  response_type = "DEFAULT_4XX"
+
+  response_templates = {
+    "application/json" = "{'message':$context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "response_5xx" {
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  response_type = "DEFAULT_5XX"
+
+  response_templates = {
+    "application/json" = "{'message':$context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+  }
+}
