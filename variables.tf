@@ -106,22 +106,27 @@ variable "function" {
 
 variable "restapi" {
   type = object({
-    domain     = optional(string)
-    location   = optional(string, "regional") # regional, edge, private
-    log_format = optional(string, "clf")
+    domain      = optional(string)
+    location    = optional(string, "regional") # regional, edge, private
+    log_format  = optional(string, "clf")
+    cors_origin = optional(string)
 
     endpoints = optional(set(object({
       method                = string
       path                  = string
+      edp_name              = string
       type                  = optional(string, "function") # mock, function, http
       target                = optional(string)
       loglevel              = optional(string, "info")
       throttling_rate_limit = optional(number, 100)
       authorizer = optional(object({
+        auth                  = string # CUSTOM, AWS_IAM, COGNITO_USER_POOLS
         name                  = string
-        type                  = optional(string, "JWT") # token, request
+        type                  = optional(string, "TOKEN") # token, request, COGNITO_USER_POOLS
         authorizer_cedentials = optional(string)
         ttl                   = optional(number, 60)
+        provider_arns         = optional(set(string))
+        scopes                = optional(set(string)) # only if auth = COGNITO_USER_POOLS
       }))
       binary_media_types = optional(list(string), [])
     })), [])
