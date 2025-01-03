@@ -211,7 +211,7 @@ resource "aws_api_gateway_method" "restapi" {
   resource_id          = local.restapi_resources[trimprefix(each.value.path, "/")].id
   authorization        = try(each.value.authorizer.auth, "NONE")
   authorizer_id        = try(aws_api_gateway_authorizer.restapi[one(keys(aws_api_gateway_authorizer.restapi))].id, null)
-  authorization_scopes = try(each.value.authorizer.scopes, [])
+  authorization_scopes = try(each.value.authorizer.scopes, null)
 }
 
 resource "aws_api_gateway_method_settings" "restapi" {
@@ -362,7 +362,7 @@ resource "aws_api_gateway_method_response" "cors" {
   }
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Origin"  = var.restapi.cors_origin != null ? true : false
     "method.response.header.Access-Control-Allow-Methods" = true
     "method.response.header.Access-Control-Allow-Headers" = true
   }
