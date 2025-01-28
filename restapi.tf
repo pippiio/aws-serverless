@@ -258,7 +258,16 @@ resource "aws_api_gateway_deployment" "restapi" {
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
 
   triggers = {
-    redeployment = sha1(jsonencode(var.restapi.endpoints))
+    redeployment = sha1(jsonencode([
+      var.restapi.endpoints,
+      aws_api_gateway_method.restapi,
+      aws_api_gateway_method.cors,
+      aws_api_gateway_integration.cors,
+      aws_api_gateway_method_response.cors,
+      aws_api_gateway_integration_response.cors,
+      aws_api_gateway_gateway_response.response_4xx,
+      aws_api_gateway_gateway_response.response_5xx
+    ]))
   }
 
   lifecycle {
