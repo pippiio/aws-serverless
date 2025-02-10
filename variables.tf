@@ -111,6 +111,12 @@ variable "restapi" {
     log_format  = optional(string, "clf")
     cors_origin = optional(string)
 
+    lambda_auth = optional(object({
+      deployment      = string # Name of the lambda func
+      type            = optional(string, "REQUEST")
+      identity_source = optional(string)
+    }))
+
     endpoints = optional(set(object({
       method                = string
       path                  = string
