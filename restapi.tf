@@ -397,7 +397,7 @@ resource "aws_api_gateway_integration_response" "cors" {
 
   //cors
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = var.restapi.cors_origin != null ? "'${var.restapi.cors_origin}'" : "''"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${coalesce(var.restapi.cors_origin, "_")}'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS,PUT,DELETE,PATCH'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
   }
@@ -412,7 +412,7 @@ resource "aws_api_gateway_gateway_response" "response_4xx" {
   }
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin" = var.restapi.cors_origin != null ? "'${var.restapi.cors_origin}'" : "''"
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
   }
 }
 
@@ -425,6 +425,6 @@ resource "aws_api_gateway_gateway_response" "response_5xx" {
   }
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin" = var.restapi.cors_origin != null ? "'${var.restapi.cors_origin}'" : "''"
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
   }
 }
