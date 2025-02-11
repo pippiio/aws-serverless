@@ -266,7 +266,8 @@ resource "aws_api_gateway_deployment" "restapi" {
       aws_api_gateway_method_response.cors,
       aws_api_gateway_integration_response.cors,
       aws_api_gateway_gateway_response.response_4xx,
-      aws_api_gateway_gateway_response.response_5xx
+      aws_api_gateway_gateway_response.response_5xx,
+      aws_api_gateway_authorizer.lambda
     ]))
   }
 
