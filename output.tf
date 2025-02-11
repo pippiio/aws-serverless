@@ -8,9 +8,11 @@ output "kms_arn" {
 
 output "rest_api" {
   value = {
-    execution_arn = try(aws_api_gateway_rest_api.restapi[0].execution_arn, null)
-    invoke_url    = try(var.restapi.domain != null ? "https://${var.restapi.domain}/" : aws_api_gateway_stage.restapi[0].invoke_url, null)
-    domain_name   = try(aws_api_gateway_domain_name.restapi[0].regional_domain_name)
+    execution_arn  = try(aws_api_gateway_rest_api.restapi[0].execution_arn, null)
+    invoke_url     = try(var.restapi.domain != null ? "https://${var.restapi.domain}/" : aws_api_gateway_stage.restapi[0].invoke_url, null)
+    domain_name    = try(aws_api_gateway_domain_name.restapi[0].regional_domain_name, null)
+    api_gateway_id = aws_api_gateway_rest_api.restapi[0].id
+    stage_name     = aws_api_gateway_stage.restapi[0].stage_name
   }
 }
 
