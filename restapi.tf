@@ -210,7 +210,7 @@ resource "aws_api_gateway_method" "restapi" {
   http_method          = each.value.method
   resource_id          = local.restapi_resources[trimprefix(each.value.path, "/")].id
   authorization        = try(each.value.authorizer.auth, "NONE")
-  authorizer_id        = try(aws_api_gateway_authorizer.restapi[one(keys(aws_api_gateway_authorizer.restapi))].id, null)
+  authorizer_id        = try(aws_api_gateway_authorizer.restapi[one(keys(aws_api_gateway_authorizer.restapi))].id, aws_api_gateway_authorizer.lambda[0].id, null)
   authorization_scopes = try(each.value.authorizer.scopes, null)
 }
 
@@ -266,7 +266,8 @@ resource "aws_api_gateway_deployment" "restapi" {
       aws_api_gateway_method_response.cors,
       aws_api_gateway_integration_response.cors,
       aws_api_gateway_gateway_response.response_4xx,
-      aws_api_gateway_gateway_response.response_5xx
+      aws_api_gateway_gateway_response.response_5xx,
+      aws_api_gateway_authorizer.lambda
     ]))
   }
 
@@ -319,7 +320,7 @@ resource "aws_api_gateway_authorizer" "restapi" {
       for k, v in auth
       : k => v
       if v != null
-    }... if auth != null
+    }... if auth.auth == "COGNITO_USER_POOLS"
   } : key => merge(value...) }
 
   rest_api_id                      = aws_api_gateway_rest_api.restapi[0].id
@@ -329,6 +330,16 @@ resource "aws_api_gateway_authorizer" "restapi" {
   provider_arns                    = each.value.provider_arns
 }
 
+resource "aws_api_gateway_authorizer" "lambda" {
+  count = local.enable_rest_api_gateway_lambda_auth
+
+  name                   = "lambda-authorizer"
+  rest_api_id            = aws_api_gateway_rest_api.restapi[0].id
+  authorizer_uri         = aws_lambda_function.function[var.restapi.lambda_auth.deployment].invoke_arn
+  authorizer_credentials = aws_iam_role.restapi[0].arn
+  type                   = var.restapi.lambda_auth.type
+  identity_source        = var.restapi.lambda_auth.identity_source
+}
 
 
 resource "aws_api_gateway_method" "cors" {
@@ -371,7 +382,7 @@ resource "aws_api_gateway_method_response" "cors" {
   }
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = var.restapi.cors_origin != null ? true : false
+    "method.response.header.Access-Control-Allow-Origin"  = var.restapi.cors_origin != null
     "method.response.header.Access-Control-Allow-Methods" = true
     "method.response.header.Access-Control-Allow-Headers" = true
   }
@@ -387,7 +398,7 @@ resource "aws_api_gateway_integration_response" "cors" {
 
   //cors
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = "'${var.restapi.cors_origin}'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${coalesce(var.restapi.cors_origin, "_")}'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS,PUT,DELETE,PATCH'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
   }
@@ -402,7 +413,7 @@ resource "aws_api_gateway_gateway_response" "response_4xx" {
   }
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
   }
 }
 
@@ -415,6 +426,6 @@ resource "aws_api_gateway_gateway_response" "response_5xx" {
   }
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
   }
 }

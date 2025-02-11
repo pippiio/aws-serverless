@@ -37,6 +37,7 @@ locals {
       }
     ]) : "${value.func_name}/${value.endpoint_name}" => value
   }
+  enable_rest_api_gateway_lambda_auth = var.restapi.lambda_auth == null ? 0 : 1
 
   # binary_media_types = distinct(flatten([
   #   for func_name, func in local.config.function : flatten([
