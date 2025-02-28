@@ -1,6 +1,10 @@
-# output "sns-topics" {
-#   value = { for name, topic in aws_sns_topic.topic : name => topic.id }
-# }
+output "sns_topics" {
+  value = { for name, topic in aws_sns_topic.topic : name => {
+    id  = topic.id
+    arn = topic.arn
+    }
+  }
+}
 
 output "kms_arn" {
   value = local.kms_arn
@@ -17,7 +21,10 @@ output "rest_api" {
 }
 
 output "lambda" {
-  value = { for name, func in aws_lambda_function.function : name => func.arn }
+  value = { for name, func in aws_lambda_function.function : name => {
+    arn = func.arn
+    }
+  }
 }
 
 # output "https_api_endpoint" {
