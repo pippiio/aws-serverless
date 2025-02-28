@@ -3,7 +3,7 @@ resource "aws_cloudwatch_event_rule" "this" {
   for_each = var.cron
 
   name                = "${each.key}-schedule"
-  description         = "Schedule for Monitoring ${each.key} Lambda Function"
+  description         = "EventBridge Schedule for ${each.key} Lambda Function"
   schedule_expression = each.value.schedule_exp
 }
 
