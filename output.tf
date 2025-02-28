@@ -1,6 +1,10 @@
-# output "sns-topics" {
-#   value = { for name, topic in aws_sns_topic.topic : name => topic.id }
-# }
+output "sns_topics" {
+  value = { for name, topic in aws_sns_topic.topic : name => {
+    id  = topic.id
+    arn = topic.arn
+    }
+  }
+}
 
 output "kms_arn" {
   value = local.kms_arn
@@ -11,8 +15,15 @@ output "rest_api" {
     execution_arn  = try(aws_api_gateway_rest_api.restapi[0].execution_arn, null)
     invoke_url     = try(var.restapi.domain != null ? "https://${var.restapi.domain}/" : aws_api_gateway_stage.restapi[0].invoke_url, null)
     domain_name    = try(aws_api_gateway_domain_name.restapi[0].regional_domain_name, null)
-    api_gateway_id = aws_api_gateway_rest_api.restapi[0].id
-    stage_name     = aws_api_gateway_stage.restapi[0].stage_name
+    api_gateway_id = try(aws_api_gateway_rest_api.restapi[0].id, null)
+    stage_name     = try(aws_api_gateway_stage.restapi[0].stage_name, null)
+  }
+}
+
+output "lambda" {
+  value = { for name, func in aws_lambda_function.function : name => {
+    arn = func.arn
+    }
   }
 }
 
