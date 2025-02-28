@@ -11,7 +11,7 @@ resource "aws_cloudwatch_event_target" "this" {
   for_each = var.cron
 
   rule      = aws_cloudwatch_event_rule.this[each.key].name
-  target_id = "monitoring-trigger-${each.key}"
+  target_id = "schedule-trigger-${each.key}"
   arn       = aws_lambda_function.function[each.key].arn
 }
 
