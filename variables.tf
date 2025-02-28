@@ -152,6 +152,13 @@ variable "restapi" {
   # })
 }
 
+variable "cron" {
+  type = map(object({
+    schedule_exp = string
+  }))
+  default = {}
+}
+
 variable "topic" {
   type = map(object({
     fifo            = optional(bool)

@@ -394,6 +394,8 @@ resource "aws_api_gateway_integration_response" "cors" {
 }
 
 resource "aws_api_gateway_gateway_response" "response_4xx" {
+  count = local.enable_rest_api_gateway
+
   rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_4XX"
 
@@ -407,6 +409,8 @@ resource "aws_api_gateway_gateway_response" "response_4xx" {
 }
 
 resource "aws_api_gateway_gateway_response" "response_5xx" {
+  count = local.enable_rest_api_gateway
+
   rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_5XX"
 
