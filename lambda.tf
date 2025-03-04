@@ -38,29 +38,29 @@ data "aws_iam_policy_document" "function" {
     effect = "Allow"
   }
 
-  # dynamic "statement" {
-  #   for_each = length(each.value.trigger.queue) > 0 ? { enabled = true } : {}
-  #   content {
-  #     sid       = "SQSTriggers"
-  #     resources = [for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn]
-  #     effect    = "Allow"
-  #     actions = [
-  #       "sqs:ReceiveMessage",
-  #       "sqs:DeleteMessage",
-  #       "sqs:GetQueueAttributes"
-  #     ]
-  #   }
-  # }
+  dynamic "statement" {
+    for_each = length(each.value.trigger.queue) > 0 ? { enabled = true } : {}
+    content {
+      sid       = "SQSTriggers"
+      resources = [for queue_key in keys(each.value.trigger.queue) : aws_sqs_queue.this[queue_key].arn]
+      effect    = "Allow"
+      actions = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ]
+    }
+  }
 
-  # dynamic "statement" {
-  #   for_each = length(each.value.target.queue) > 0 ? { enabled = true } : {}
-  #   content {
-  #     sid       = "SQSTargets"
-  #     resources = [for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn]
-  #     effect    = "Allow"
-  #     actions   = ["sqs:SendMessage"]
-  #   }
-  # }
+  dynamic "statement" {
+    for_each = length(each.value.target.queue) > 0 ? { enabled = true } : {}
+    content {
+      sid       = "SQSTargets"
+      resources = [for queue_key in keys(each.value.target.queue) : aws_sqs_queue.this[queue_key].arn]
+      effect    = "Allow"
+      actions   = ["sqs:SendMessage"]
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "function" {
