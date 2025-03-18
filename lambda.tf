@@ -110,7 +110,7 @@ resource "aws_lambda_function" "function" {
     "s3"    = try(data.aws_s3_object.function_source[each.key].key, null)
     "local" = try(aws_s3_object.source[each.key].key, null)
   }[each.value.source.type], null)
-  source_code_hash = each.value.source.type == "s3" ? each.value.source.hash : null
+  source_code_hash = each.value.source.type == "s3" ? lookup(data.aws_s3_object.function_source[each.key].metadata, "hash", null) : each.value.source.hash
 
   handler = each.value.source.handler
   runtime = each.value.source.runtime
