@@ -15,6 +15,15 @@ output "rest_api" {
     stage_name     = try(aws_api_gateway_stage.restapi[0].stage_name, null)
   }
 }
+output "lambda_functions_info" {
+  value = { for name, fn in aws_lambda_function.function : name => {
+    arn           = fn.arn
+    function_name = fn.function_name
+    description   = fn.description
+    handler       = fn.handler
+    runtime       = fn.runtime
+  } }
+}
 
 # output "https_api_endpoint" {
 #   value = local.enable_https_api_gateway == 1 ? one(aws_apigatewayv2_api.this).api_endpoint : null
