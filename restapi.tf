@@ -324,9 +324,11 @@ resource "aws_api_gateway_authorizer" "restapi" {
 
   rest_api_id                      = aws_api_gateway_rest_api.restapi[0].id
   type                             = each.value.type
-  authorizer_result_ttl_in_seconds = each.value.ttl
-  name                             = each.key
-  provider_arns                    = each.value.provider_arns
+  authorizer_result_ttl_in_seconds = try(each.value.ttl, 60)
+
+  authorizer_uri = try(each.value.auth, "") == "CUSTOM" ? "arn:aws:apigateway:${local.region_name}:lambda:path/2015-03-31/functions/${each.value.lambda_arn}/invocations" : null
+  
+  provider_arns = try(each.value.type, "") == "COGNITO_USER_POOLS" ? each.value.provider_arns
 }
 
 

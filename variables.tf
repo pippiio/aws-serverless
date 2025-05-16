@@ -125,6 +125,7 @@ variable "restapi" {
         type                  = optional(string, "TOKEN") # token, request, COGNITO_USER_POOLS
         authorizer_cedentials = optional(string)
         ttl                   = optional(number, 60)
+        lambda_arn            = optional(string)
         provider_arns         = optional(set(string))
         scopes                = optional(set(string)) # only if auth = COGNITO_USER_POOLS
       }))
