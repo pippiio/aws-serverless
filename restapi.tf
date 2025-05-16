@@ -323,14 +323,14 @@ resource "aws_api_gateway_authorizer" "restapi" {
   } : key => merge(value...) }
 
   rest_api_id                      = aws_api_gateway_rest_api.restapi[0].id
+  name                             = each.key
   type                             = each.value.type
   authorizer_result_ttl_in_seconds = try(each.value.ttl, 60)
 
   authorizer_uri = try(each.value.auth, "") == "CUSTOM" ? "arn:aws:apigateway:${local.region_name}:lambda:path/2015-03-31/functions/${each.value.lambda_arn}/invocations" : null
-  
-  provider_arns = try(each.value.type, "") == "COGNITO_USER_POOLS" ? each.value.provider_arns
-}
 
+  provider_arns = try(each.value.type, "") == "COGNITO_USER_POOLS" ? each.value.provider_arns : []
+}
 
 
 resource "aws_api_gateway_method" "cors" {
