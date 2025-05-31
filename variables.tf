@@ -23,6 +23,34 @@ variable "config" {
   default = {}
 }
 
+variable "custom_authorizer_function" {
+  type = object({
+    description        = optional(string)
+    iam_role           = optional(string)
+    timeout_seconds    = optional(number, 3)
+    memory_size        = optional(number, 128)
+    subnet_ids         = optional(set(string), [])
+    security_group_ids = optional(set(string), [])
+    iam_policies_arns  = optional(set(string))
+    inline_policies    = optional(map(string), {})
+
+    source = object({
+      type         = string # ecr, s3, local
+      runtime      = string
+      handler      = string
+      architecture = optional(string, "x86_64")
+      path         = string
+      hash         = optional(string)
+    })
+
+    environment_variable = optional(map(object({
+      type  = optional(string, "text") # text|ssm
+      value = string
+    })), {})
+  })
+  default = {}
+}
+
 variable "function" {
   type = map(object({
     description        = optional(string)
