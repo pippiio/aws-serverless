@@ -16,6 +16,13 @@ output "rest_api" {
   }
 }
 
+output "lambda_functions" {
+  value = {
+    for name, func in aws_lambda_function.function :
+    name => { function_name = name, arn = func.arn }
+  }
+}
+
 # output "https_api_endpoint" {
 #   value = local.enable_https_api_gateway == 1 ? one(aws_apigatewayv2_api.this).api_endpoint : null
 # }
