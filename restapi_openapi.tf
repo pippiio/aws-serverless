@@ -98,13 +98,13 @@ locals {
         description = "CORS support"
         headers = {
           "Access-Control-Allow-Origin" = {
-            schema = { type = "string" }
+            type = "string"
           }
           "Access-Control-Allow-Methods" = {
-            schema = { type = "string" }
+            type = "string"
           }
           "Access-Control-Allow-Headers" = {
-            schema = { type = "string" }
+            type = "string"
           }
         }
       }
@@ -164,7 +164,7 @@ locals {
 
   restapi_openapi = merge(
     {
-      openapi = "3.0.1"
+      swagger = "2.0"
       info = {
         title   = "${var.name_prefix}api-gw"
         version = "1.0"
@@ -172,9 +172,7 @@ locals {
       paths = local.restapi_openapi_paths
     },
     jsondecode(length(local.restapi_security_schemes) > 0 ? jsonencode({
-      components = {
-        securitySchemes = local.restapi_security_schemes
-      }
+      securityDefinitions = local.restapi_security_schemes
     }) : "{}"),
     jsondecode(var.restapi.cors_origin != null ? jsonencode({
       x-amazon-apigateway-gateway-responses = local.restapi_gateway_responses
