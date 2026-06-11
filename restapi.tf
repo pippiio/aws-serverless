@@ -1,5 +1,6 @@
 locals {
-  endpoints = { for endpoint in var.restapi.endpoints : "${endpoint.path}/${endpoint.method}" => endpoint }
+  endpoints                 = { for endpoint in var.restapi.endpoints : "${endpoint.path}/${endpoint.method}" => endpoint }
+  restapi_uses_openapi_body = var.restapi.create_routes_with_openapi_body
 
   rest_path = toset([for endpoint in var.restapi.endpoints : trimprefix(endpoint.path, "/")])
 
@@ -114,6 +115,9 @@ resource "aws_api_gateway_rest_api" "restapi" {
   name        = "${var.name_prefix}api-gw"
   description = "${var.name_prefix}api"
 
+  body              = local.restapi_uses_openapi_body ? local.restapi_openapi_body : null
+  put_rest_api_mode = local.restapi_uses_openapi_body ? "overwrite" : null
+
   disable_execute_api_endpoint = var.restapi.domain != null
   tags                         = local.default_tags
 
@@ -124,7 +128,7 @@ resource "aws_api_gateway_rest_api" "restapi" {
 
 resource "aws_api_gateway_resource" "level1" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 1 }
+  if length(split("/", path)) == 1 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_rest_api.restapi[0].root_resource_id
@@ -133,7 +137,7 @@ resource "aws_api_gateway_resource" "level1" {
 
 resource "aws_api_gateway_resource" "level2" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 2 }
+  if length(split("/", path)) == 2 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level1[trimsuffix(each.key, "/${each.value}")].id
@@ -142,7 +146,7 @@ resource "aws_api_gateway_resource" "level2" {
 
 resource "aws_api_gateway_resource" "level3" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 3 }
+  if length(split("/", path)) == 3 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level2[trimsuffix(each.key, "/${each.value}")].id
@@ -151,7 +155,7 @@ resource "aws_api_gateway_resource" "level3" {
 
 resource "aws_api_gateway_resource" "level4" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 4 }
+  if length(split("/", path)) == 4 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level3[trimsuffix(each.key, "/${each.value}")].id
@@ -160,7 +164,7 @@ resource "aws_api_gateway_resource" "level4" {
 
 resource "aws_api_gateway_resource" "level5" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 5 }
+  if length(split("/", path)) == 5 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level4[trimsuffix(each.key, "/${each.value}")].id
@@ -169,7 +173,7 @@ resource "aws_api_gateway_resource" "level5" {
 
 resource "aws_api_gateway_resource" "level6" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 6 }
+  if length(split("/", path)) == 6 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level5[trimsuffix(each.key, "/${each.value}")].id
@@ -178,7 +182,7 @@ resource "aws_api_gateway_resource" "level6" {
 
 resource "aws_api_gateway_resource" "level7" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 7 }
+  if length(split("/", path)) == 7 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level6[trimsuffix(each.key, "/${each.value}")].id
@@ -187,7 +191,7 @@ resource "aws_api_gateway_resource" "level7" {
 
 resource "aws_api_gateway_resource" "level8" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 8 }
+  if length(split("/", path)) == 8 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level7[trimsuffix(each.key, "/${each.value}")].id
@@ -196,7 +200,7 @@ resource "aws_api_gateway_resource" "level8" {
 
 resource "aws_api_gateway_resource" "level9" {
   for_each = { for path in local.all_paths : path => reverse(split("/", path))[0]
-  if length(split("/", path)) == 9 }
+  if length(split("/", path)) == 9 && !local.restapi_uses_openapi_body }
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   parent_id   = aws_api_gateway_resource.level8[trimsuffix(each.key, "/${each.value}")].id
@@ -204,7 +208,7 @@ resource "aws_api_gateway_resource" "level9" {
 }
 
 resource "aws_api_gateway_method" "restapi" {
-  for_each = local.endpoints
+  for_each = local.restapi_uses_openapi_body ? {} : local.endpoints
 
   rest_api_id          = aws_api_gateway_rest_api.restapi[0].id
   http_method          = each.value.method
@@ -215,7 +219,7 @@ resource "aws_api_gateway_method" "restapi" {
 }
 
 resource "aws_api_gateway_method_settings" "restapi" {
-  for_each = local.endpoints
+  for_each = local.restapi_uses_openapi_body ? {} : local.endpoints
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   stage_name  = aws_api_gateway_stage.restapi[0].stage_name
@@ -234,11 +238,11 @@ resource "aws_lambda_permission" "restapi" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.function[each.value].function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${split("/", aws_api_gateway_deployment.restapi[0].execution_arn)[0]}/*"
+  source_arn    = "${aws_api_gateway_rest_api.restapi[0].execution_arn}/*"
 }
 
 resource "aws_api_gateway_integration" "restapi" {
-  for_each = local.endpoints
+  for_each = local.restapi_uses_openapi_body ? {} : local.endpoints
 
   rest_api_id             = aws_api_gateway_rest_api.restapi[0].id
   resource_id             = local.restapi_resources[trimprefix(each.value.path, "/")].id
@@ -258,7 +262,13 @@ resource "aws_api_gateway_deployment" "restapi" {
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
 
   triggers = {
-    redeployment = sha1(jsonencode([
+    redeployment = local.restapi_uses_openapi_body ? sha1(jsonencode([
+      local.restapi_openapi,
+      var.restapi.log_format,
+      local.restapi_method_setting_overrides,
+      local.restapi_default_loglevel,
+      local.restapi_default_throttling_rate_limit
+      ])) : sha1(jsonencode([
       var.restapi.endpoints,
       aws_api_gateway_method.restapi,
       aws_api_gateway_method.cors,
@@ -279,6 +289,34 @@ resource "aws_api_gateway_deployment" "restapi" {
   ]
 }
 
+resource "aws_api_gateway_method_settings" "restapi_all" {
+  count = local.enable_rest_api_gateway == 1 && local.restapi_uses_openapi_body ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  stage_name  = aws_api_gateway_stage.restapi[0].stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled       = true
+    logging_level         = upper(local.restapi_default_loglevel)
+    throttling_rate_limit = local.restapi_default_throttling_rate_limit
+  }
+}
+
+resource "aws_api_gateway_method_settings" "restapi_openapi_overrides" {
+  for_each = local.restapi_uses_openapi_body ? local.restapi_method_setting_overrides : {}
+
+  rest_api_id = aws_api_gateway_rest_api.restapi[0].id
+  stage_name  = aws_api_gateway_stage.restapi[0].stage_name
+  method_path = "${trimprefix(each.value.path, "/")}/${each.value.method}"
+
+  settings {
+    metrics_enabled       = true
+    logging_level         = upper(each.value.loglevel)
+    throttling_rate_limit = each.value.throttling_rate_limit
+  }
+}
+
 resource "aws_api_gateway_stage" "restapi" {
   count = local.enable_rest_api_gateway
 
@@ -288,7 +326,7 @@ resource "aws_api_gateway_stage" "restapi" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.restapi[0].arn
-    format          = try(local.log_format["clf"], var.restapi.log_format)
+    format          = try(local.log_format[var.restapi.log_format], var.restapi.log_format)
   }
 }
 
@@ -313,7 +351,7 @@ resource "aws_api_gateway_base_path_mapping" "restapi" {
 }
 
 resource "aws_api_gateway_authorizer" "restapi" {
-  for_each = { for key, value in {
+  for_each = local.restapi_uses_openapi_body ? {} : { for key, value in {
     for auth in values(local.rest_endpoints)[*].endpoint.authorizer
     : auth.name => {
       for k, v in auth
@@ -334,7 +372,7 @@ resource "aws_api_gateway_authorizer" "restapi" {
 
 
 resource "aws_api_gateway_method" "cors" {
-  for_each = local.restapi_resources
+  for_each = local.restapi_uses_openapi_body ? {} : local.restapi_resources
 
   rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   resource_id   = each.value.id
@@ -343,7 +381,7 @@ resource "aws_api_gateway_method" "cors" {
 }
 
 resource "aws_api_gateway_integration" "cors" {
-  for_each = local.restapi_resources
+  for_each = local.restapi_uses_openapi_body ? {} : local.restapi_resources
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   resource_id = each.value.id
@@ -361,7 +399,7 @@ resource "aws_api_gateway_integration" "cors" {
 }
 
 resource "aws_api_gateway_method_response" "cors" {
-  for_each = local.restapi_resources
+  for_each = local.restapi_uses_openapi_body ? {} : local.restapi_resources
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   resource_id = each.value.id
@@ -380,7 +418,7 @@ resource "aws_api_gateway_method_response" "cors" {
 }
 
 resource "aws_api_gateway_integration_response" "cors" {
-  for_each = local.restapi_resources
+  for_each = local.restapi_uses_openapi_body ? {} : local.restapi_resources
 
   rest_api_id = aws_api_gateway_rest_api.restapi[0].id
   resource_id = each.value.id
@@ -396,7 +434,7 @@ resource "aws_api_gateway_integration_response" "cors" {
 }
 
 resource "aws_api_gateway_gateway_response" "response_4xx" {
-  count = local.enable_rest_api_gateway
+  count = local.enable_rest_api_gateway == 1 && !local.restapi_uses_openapi_body ? 1 : 0
 
   rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_4XX"
@@ -411,7 +449,7 @@ resource "aws_api_gateway_gateway_response" "response_4xx" {
 }
 
 resource "aws_api_gateway_gateway_response" "response_5xx" {
-  count = local.enable_rest_api_gateway
+  count = local.enable_rest_api_gateway == 1 && !local.restapi_uses_openapi_body ? 1 : 0
 
   rest_api_id   = aws_api_gateway_rest_api.restapi[0].id
   response_type = "DEFAULT_5XX"

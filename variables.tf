@@ -106,10 +106,11 @@ variable "function" {
 
 variable "restapi" {
   type = object({
-    domain      = optional(string)
-    location    = optional(string, "regional") # regional, edge, private
-    log_format  = optional(string, "clf")
-    cors_origin = optional(string)
+    domain                          = optional(string)
+    location                        = optional(string, "regional") # regional, edge, private
+    log_format                      = optional(string, "clf")
+    cors_origin                     = optional(string)
+    create_routes_with_openapi_body = optional(bool, false)
 
     endpoints = optional(set(object({
       method                = string
@@ -133,6 +134,11 @@ variable "restapi" {
     })), [])
   })
   default = {}
+
+  validation {
+    error_message = "`restapi.create_routes_with_openapi_body` currently supports endpoint types [function, mock]."
+    condition     = !var.restapi.create_routes_with_openapi_body || try(alltrue([for endpoint in var.restapi.endpoints : contains(["function", "mock"], endpoint.type)]), true)
+  }
 
   #   firewall = optional(object({
   #     block_by_default = optional(bool, false)
