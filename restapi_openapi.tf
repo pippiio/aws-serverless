@@ -33,26 +33,25 @@ locals {
         in                           = "header"
         x-amazon-apigateway-authtype = upper(authorizer.auth) == "AWS_IAM" ? "awsSigv4" : lower(authorizer.auth) == "cognito_user_pools" ? "cognito_user_pools" : lower(authorizer.auth)
       },
-      upper(authorizer.auth) == "AWS_IAM" ? {} :
-      {
+      jsondecode(upper(authorizer.auth) == "AWS_IAM" ? "{}" : jsonencode({
         x-amazon-apigateway-authorizer = merge(
           {
             type = upper(authorizer.auth) == "COGNITO_USER_POOLS" ? "cognito_user_pools" : lower(authorizer.type)
           },
-          try(authorizer.provider_arns, null) != null ? {
+          jsondecode(try(authorizer.provider_arns, null) != null ? jsonencode({
             providerARNs = tolist(authorizer.provider_arns)
-          } : {},
-          try(authorizer.lambda_arn, null) != null ? {
+          }) : "{}"),
+          jsondecode(try(authorizer.lambda_arn, null) != null ? jsonencode({
             authorizerUri = "arn:aws:apigateway:${local.region_name}:lambda:path/2015-03-31/functions/${authorizer.lambda_arn}/invocations"
-          } : {},
-          try(authorizer.authorizer_cedentials, null) != null ? {
+          }) : "{}"),
+          jsondecode(try(authorizer.authorizer_cedentials, null) != null ? jsonencode({
             authorizerCredentials = authorizer.authorizer_cedentials
-          } : {},
-          try(authorizer.ttl, null) != null ? {
+          }) : "{}"),
+          jsondecode(try(authorizer.ttl, null) != null ? jsonencode({
             authorizerResultTtlInSeconds = authorizer.ttl
-          } : {}
+          }) : "{}")
         )
-      }
+      }))
     )
   }
 
@@ -66,15 +65,15 @@ locals {
           }
         }
       },
-      endpoint.authorizer != null ? {
+      jsondecode(endpoint.authorizer != null ? jsonencode({
         security = [
           {
             (endpoint.authorizer.name) = try(endpoint.authorizer.scopes, null) != null ? tolist(endpoint.authorizer.scopes) : []
           }
         ]
-      } : {},
+      }) : "{}"),
       {
-        x-amazon-apigateway-integration = endpoint.type == "mock" ? {
+        x-amazon-apigateway-integration = jsondecode(endpoint.type == "mock" ? jsonencode({
           type = "mock"
           requestTemplates = {
             "application/json" = jsonencode({ statusCode = 200 })
@@ -84,11 +83,11 @@ locals {
               statusCode = "200"
             }
           }
-          } : {
+          }) : jsonencode({
           type       = "aws_proxy"
           httpMethod = "POST"
           uri        = aws_lambda_function.function[endpoint.target].invoke_arn
-        }
+        }))
       }
     )
   }
@@ -119,7 +118,7 @@ locals {
         default = {
           statusCode = "200"
           responseParameters = {
-            "method.response.header.Access-Control-Allow-Origin"  = "'${var.restapi.cors_origin}'"
+            "method.response.header.Access-Control-Allow-Origin"  = "'${coalesce(var.restapi.cors_origin, "_")}'"
             "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS,PUT,DELETE,PATCH'"
             "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
           }
@@ -131,9 +130,9 @@ locals {
   restapi_openapi_paths = {
     for path in local.restapi_endpoint_paths :
     path => merge(
-      var.restapi.cors_origin != null && !contains(local.restapi_paths_with_options, path) ? {
+      jsondecode(var.restapi.cors_origin != null && !contains(local.restapi_paths_with_options, path) ? jsonencode({
         options = local.restapi_openapi_cors_operation
-      } : {},
+      }) : "{}"),
       merge([
         for endpoint in var.restapi.endpoints :
         {
@@ -147,7 +146,7 @@ locals {
   restapi_gateway_responses = {
     DEFAULT_4XX = {
       responseParameters = {
-        "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+        "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
       }
       responseTemplates = {
         "application/json" = "{'message':$context.error.messageString}"
@@ -155,7 +154,7 @@ locals {
     }
     DEFAULT_5XX = {
       responseParameters = {
-        "gatewayresponse.header.Access-Control-Allow-Origin" = "'${var.restapi.cors_origin}'"
+        "gatewayresponse.header.Access-Control-Allow-Origin" = "'${coalesce(var.restapi.cors_origin, "_")}'"
       }
       responseTemplates = {
         "application/json" = "{'message':$context.error.messageString}"
@@ -172,14 +171,14 @@ locals {
       }
       paths = local.restapi_openapi_paths
     },
-    length(local.restapi_security_schemes) > 0 ? {
+    jsondecode(length(local.restapi_security_schemes) > 0 ? jsonencode({
       components = {
         securitySchemes = local.restapi_security_schemes
       }
-    } : {},
-    var.restapi.cors_origin != null ? {
+    }) : "{}"),
+    jsondecode(var.restapi.cors_origin != null ? jsonencode({
       x-amazon-apigateway-gateway-responses = local.restapi_gateway_responses
-    } : {}
+    }) : "{}")
   )
 
   restapi_openapi_body = jsonencode(local.restapi_openapi)
