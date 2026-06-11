@@ -35,7 +35,7 @@ locals {
         endpoint_name = endpoint.edp_name
         endpoint      = endpoint
       }
-    ]) : "${value.func_name}/${value.endpoint_name}" => value
+    ]) : "${value.endpoint.path}/${value.endpoint.method}" => value
   }
 
   # binary_media_types = distinct(flatten([
