@@ -226,7 +226,7 @@ resource "aws_api_gateway_method_settings" "restapi" {
   method_path = each.key
 
   settings {
-    metrics_enabled       = true
+    metrics_enabled       = var.restapi.detailed_metrics
     logging_level         = upper(each.value.loglevel)
     throttling_rate_limit = each.value.throttling_rate_limit
   }
@@ -297,7 +297,7 @@ resource "aws_api_gateway_method_settings" "restapi_all" {
   method_path = "*/*"
 
   settings {
-    metrics_enabled       = true
+    metrics_enabled       = var.restapi.detailed_metrics
     logging_level         = upper(local.restapi_default_loglevel)
     throttling_rate_limit = local.restapi_default_throttling_rate_limit
   }
@@ -311,7 +311,7 @@ resource "aws_api_gateway_method_settings" "restapi_openapi_overrides" {
   method_path = "${trimprefix(each.value.path, "/")}/${each.value.method}"
 
   settings {
-    metrics_enabled       = true
+    metrics_enabled       = var.restapi.detailed_metrics
     logging_level         = upper(each.value.loglevel)
     throttling_rate_limit = each.value.throttling_rate_limit
   }
