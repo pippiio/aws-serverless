@@ -111,6 +111,8 @@ variable "restapi" {
     log_format                      = optional(string, "clf")
     cors_origin                     = optional(string)
     create_routes_with_openapi_body = optional(bool, false)
+    # Per-method CloudWatch metrics; each is billed as a custom metric.
+    detailed_metrics = optional(bool, true)
 
     endpoints = optional(set(object({
       method                = string
